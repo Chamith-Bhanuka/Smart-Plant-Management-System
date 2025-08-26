@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFarm Nexus | Bio-Symmetric Interface</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+
+<!-- Improved Bee Animation Background Container -->
+<div class="bee-container" id="bee-container"></div>
+
+<div class="main-container">
+    <header class="header">
+        <div class="header-left">
+            <div class="logo"> <i class="fas fa-seedling"></i> <span>SmartFarm Nexus</span> </div>
+            <div class="theme-switch"> <i class="fas fa-moon"></i> <label class="switch"> <input type="checkbox" id="theme-toggle"> <span class="slider"></span> </label> <i class="fas fa-sun"></i> </div>
+        </div>
+        <button class="login-btn">Login</button>
+    </header>
+
+    <div class="page-content">
+        <div class="info-panel">
+            <div class="welcome-text">
+                <h1>Your Digital Ecosystem Awaits</h1>
+                <p>Hover over the leaf nodes to explore our smart farming modules and discover data-driven insights.</p>
+            </div>
+        </div>
+        <div class="leaf-panel">
+            <div class="leaf-interface" id="leaf-interface">
+                <svg viewBox="0 0 900 700" preserveAspectRatio="xMidYMid meet">
+                    <path class="leaf-outline" d="M450 50 C 350 50, 250 150, 200 250 C 180 300, 170 350, 175 400 C 180 450, 200 500, 230 540 C 280 600, 350 630, 450 650 C 550 630, 620 600, 670 540 C 700 500, 720 450, 725 400 C 730 350, 720 300, 700 250 C 650 150, 550 50, 450 50 Z" />
+                    <path class="main-vein" d="M450 50 L450 650" />
+                    <path class="secondary-vein" d="M450 150 C 400 160, 350 180, 280 220" />
+                    <path class="secondary-vein" d="M450 250 C 380 270, 320 300, 250 340" />
+                    <path class="secondary-vein" d="M450 350 C 380 380, 310 420, 230 470" />
+                    <path class="secondary-vein" d="M450 450 C 400 480, 350 520, 290 560" />
+                    <path class="secondary-vein" d="M450 150 C 500 160, 550 180, 620 220" />
+                    <path class="secondary-vein" d="M450 250 C 520 270, 580 300, 650 340" />
+                    <path class="secondary-vein" d="M450 350 C 520 380, 590 420, 670 470" />
+                    <path class="secondary-vein" d="M450 450 C 500 480, 550 520, 610 560" />
+                    <path class="tertiary-vein" d="M400 200 L320 240" />
+                    <path class="tertiary-vein" d="M500 200 L580 240" />
+                    <path class="tertiary-vein" d="M380 300 L300 350" />
+                    <path class="tertiary-vein" d="M520 300 L600 350" />
+                    <path class="tertiary-vein" d="M380 400 L310 450" />
+                    <path class="tertiary-vein" d="M520 400 L590 450" />
+                </svg>
+                <!-- Nodes and hover cards will be dynamically injected here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="custom-modal-overlay" id="custom-modal-overlay">
+    <div class="custom-modal">
+        <h3 id="modal-title"></h3>
+        <p id="modal-message"></p>
+        <button class="modal-close-btn" id="modal-close-btn">OK</button>
+    </div>
+</div>
+
+<script src="js/index.js"></script>
+</body>
+</html>
