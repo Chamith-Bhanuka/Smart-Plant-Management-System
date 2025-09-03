@@ -107,41 +107,41 @@ document.addEventListener('DOMContentLoaded', () => {
         node.addEventListener('click', () => {
             showModal(`Launching Module`, `🌱 The ${feature.title} module is now loading...`);
         });
-
-        node.addEventListener('click', () => {
-            switch (feature.id) {
-                case 'monitor':
-                    handleMonitorClick();
-                    break;
-                case 'chat':
-                    handleAIclick();
-                    break;
-                case 'disease':
-                    handleDiagnosticsClick();
-                    break;
-                case 'expert':
-                    handleExpertClick();
-                    break;
-                case 'articles':
-                    handleLearningClick();
-                    break;
-                case 'reports':
-                    handleAnalyticsClick();
-                    break;
-            }
-        });
     });
 
-    // THEME TOGGLE FUNCTIONALITY
+    // SETUP WIZARD BUTTON EVENT
+    const setupWizardBtn = document.getElementById('setup-wizard-btn');
+    setupWizardBtn.addEventListener('click', () => {
+        showModal('Setup Wizard', '🚀 Welcome to SmartFarm Setup! We\'ll guide you through configuring your smart farming system step by step.');
+    });
+
+    // THEME TOGGLE FUNCTIONALITY (Fixed localStorage usage)
     const themeToggle = document.getElementById('theme-toggle');
     const htmlEl = document.documentElement;
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+
+    // Try to get saved theme, but don't rely on localStorage
+    let savedTheme = 'dark';
+    try {
+        savedTheme = localStorage.getItem('theme') || 'dark';
+    } catch (e) {
+        // Fallback if localStorage is not available
+        savedTheme = 'dark';
+    }
+
     htmlEl.setAttribute('data-theme', savedTheme);
     themeToggle.checked = savedTheme === 'light';
+
     themeToggle.addEventListener('change', () => {
         const newTheme = themeToggle.checked ? 'light' : 'dark';
         htmlEl.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+
+        // Try to save theme, but continue if localStorage is not available
+        try {
+            localStorage.setItem('theme', newTheme);
+        } catch (e) {
+            // Continue without saving if localStorage is not available
+            console.log('Theme preference could not be saved');
+        }
     });
 
     // CUSTOM MODAL FUNCTIONALITY
@@ -149,26 +149,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTitle = document.getElementById('modal-title');
     const modalMessage = document.getElementById('modal-message');
     const modalCloseBtn = document.getElementById('modal-close-btn');
+
     function showModal(title, message) {
         modalTitle.textContent = title;
         modalMessage.textContent = message;
         modalOverlay.classList.add('visible');
     }
-    function hideModal() { modalOverlay.classList.remove('visible'); }
+
+    function hideModal() {
+        modalOverlay.classList.remove('visible');
+    }
+
     modalCloseBtn.addEventListener('click', hideModal);
     modalOverlay.addEventListener('click', (event) => {
         if (event.target === modalOverlay) hideModal();
     });
 
-    // ---------------------------------------------------
+
     // REALISTIC BEE ANIMATION SCRIPT
-    // ---------------------------------------------------
     const beeContainer = document.getElementById('bee-container');
     const messages = [
         "New soil data available",
         "Pest alert in Zone B",
         "Irrigation cycle complete",
-        // "High nutrient levels detected",
         "Rain expected",
         "Harvest time approaching",
         "Low moisture detected",
@@ -205,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const endY = Math.random() * (window.innerHeight * 0.6) + window.innerHeight * 0.2;
         const duration = Math.random() * 8 + 12; // 12-20 seconds
 
-        // Set flight path
+        // Set CSS custom properties for flight path
         bee.style.setProperty('--start-x', `${startX}px`);
         bee.style.setProperty('--end-x', `${endX}px`);
         bee.style.setProperty('--start-y', `${startY}px`);
@@ -252,28 +255,3 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     setTimeout(randomSpawn, 10000);
 });
-
-// Define your custom click handlers
-function handleMonitorClick() {
-    console.log("Monitor clicked!");
-}
-
-function handleAIclick() {
-    console.log("AI Assistant clicked!");
-}
-
-function handleDiagnosticsClick() {
-    console.log("Diagnostics clicked!");
-}
-
-function handleExpertClick() {
-    console.log("Expert clicked!");
-}
-
-function handleLearningClick() {
-    console.log("Learning clicked!");
-}
-
-function handleAnalyticsClick() {
-    console.log("Analytics clicked!");
-}

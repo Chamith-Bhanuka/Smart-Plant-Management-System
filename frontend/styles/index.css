@@ -1,6 +1,4 @@
-/* --------------------------------------------------- */
 /* THEME & COLOR VARIABLES */
-/* --------------------------------------------------- */
 :root {
     /* Dark Theme (Default) */
     --bg-color: #0A0F1A;
@@ -33,9 +31,8 @@ html[data-theme="light"] {
     --modal-bg: rgba(255, 255, 255, 0.95);
 }
 
-/* --------------------------------------------------- */
+
 /* GENERAL STYLES */
-/* --------------------------------------------------- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -75,9 +72,8 @@ body::before {
     to { background-position: 50px 50px, 50px 50px, 50px 50px; }
 }
 
-/* --------------------------------------------------- */
+
 /* MAIN LAYOUT & HEADER */
-/* --------------------------------------------------- */
 .main-container {
     width: 100%;
     height: 100%;
@@ -131,9 +127,8 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .login-btn { background-color: transparent; border: 2px solid var(--primary-glow); color: var(--primary-glow); padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
 .login-btn:hover { background-color: var(--primary-glow); color: var(--bg-color); box-shadow: 0 0 15px var(--glow-shadow); }
 
-/* --------------------------------------------------- */
+
 /* PAGE CONTENT LAYOUT (Side-by-Side) */
-/* --------------------------------------------------- */
 .page-content {
     flex-grow: 1;
     width: 100%;
@@ -170,6 +165,60 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     color: var(--text-secondary);
     font-size: 1.2rem;
     max-width: 450px;
+    margin-bottom: 2rem;
+}
+
+/* Setup Wizard Button */
+.setup-wizard-btn {
+    background: var(--leaf-gradient);
+    border: none;
+    color: var(--bg-color);
+    padding: 0.8rem 1.8rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    position: relative;
+    overflow: hidden;
+    max-width: fit-content;
+}
+
+.setup-wizard-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.setup-wizard-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+}
+
+.setup-wizard-btn:hover::before {
+    left: 100%;
+}
+
+.setup-wizard-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.setup-wizard-btn i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.setup-wizard-btn:hover i {
+    transform: rotate(10deg);
 }
 
 @keyframes fade-in-up {
@@ -228,9 +277,8 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .tertiary-vein { animation-delay: 2.5s; }
 @keyframes pop-in { to { transform: translate(-50%, -50%) scale(1); } }
 
-/* --------------------------------------------------- */
+
 /* IMPROVED HOVER CARDS */
-/* --------------------------------------------------- */
 .hover-card {
     position: absolute;
     width: 280px;
@@ -269,9 +317,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     line-height: 1.6;
 }
 
-/* --------------------------------------------------- */
-/* REALISTIC BEE ANIMATIONS */
-/* --------------------------------------------------- */
+/*BEE ANIMATIONS*/
 .bee-container {
     position: fixed;
     top: 0;
@@ -288,9 +334,13 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     width: 24px;
     height: 16px;
     pointer-events: none;
+    --start-x: 0px;
+    --start-y: 0px;
+    --end-x: 0px;
+    --end-y: 0px;
 }
 
-/* Realistic Bee Body */
+/*Bee Body */
 .bee-body {
     position: relative;
     width: 100%;
@@ -342,27 +392,21 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .wing.left {
     left: 2px;
     transform: rotate(-10deg);
+    --base-rotation: -10deg;
 }
 
 .wing.right {
     right: 2px;
     transform: rotate(10deg);
-}
-
-@keyframes wing-flap {
-    0% { transform: rotate(var(--base-rotation)) rotateY(0deg); }
-    100% { transform: rotate(var(--base-rotation)) rotateY(25deg); }
-}
-
-.wing.left {
-    --base-rotation: -10deg;
-}
-
-.wing.right {
     --base-rotation: 10deg;
 }
 
-/* Bee Flight Animation */
+@keyframes wing-flap {
+    0% { transform: rotate(var(--base-rotation, 0deg)) rotateY(0deg); }
+    100% { transform: rotate(var(--base-rotation, 0deg)) rotateY(25deg); }
+}
+
+/* Bee Flight Animation*/
 .bee {
     animation: bee-flight linear forwards;
 }
@@ -415,9 +459,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     border-top-color: var(--card-bg);
 }
 
-/* --------------------------------------------------- */
 /* MODAL & GENERAL MODAL */
-/* --------------------------------------------------- */
 .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 .custom-modal-overlay.visible { opacity: 1; pointer-events: auto; }
 .custom-modal { background: var(--modal-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); text-align: center; width: 90%; max-width: 400px; transform: scale(0.9); transition: transform 0.3s ease; }
@@ -427,9 +469,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .modal-close-btn { background-color: var(--primary-glow); border: none; color: var(--bg-color); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
 .modal-close-btn:hover { filter: brightness(1.1); }
 
-/* --------------------------------------------------- */
 /* RESPONSIVE DESIGN */
-/* --------------------------------------------------- */
 @media (max-width: 950px) {
     .page-content { flex-direction: column; text-align: center; }
     .info-panel { text-align: center; }
@@ -447,6 +487,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     .hover-card { width: 220px; padding: 1rem; }
     .hover-card h3 { font-size: 1.1rem; }
     .hover-card p { font-size: 0.85rem; }
+    .setup-wizard-btn { padding: 0.6rem 1.4rem; font-size: 0.9rem; }
 }
 @media (max-width: 500px) {
     .leaf-interface { transform: scale(0.7); margin-top: -5rem; }
@@ -454,4 +495,5 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     .welcome-text p { font-size: 1rem; }
     .login-btn { padding: 0.4rem 0.8rem; font-size: 0.9rem; }
     .hover-card { width: 200px; padding: 0.8rem; }
+    .setup-wizard-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
 }
