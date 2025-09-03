@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartFarm Nexus | Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+  <link rel="stylesheet" href="styles/auth.css">
+</head>
+<body>
+
+<div class="page-wrapper">
+  <div class="auth-container" id="auth-container">
+    <div class="auth-header">
+      <div class="logo">
+        <i class="fas fa-seedling"></i>
+        <span>SmartFarm Nexus</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+        <i class="fas fa-moon" id="theme-icon"></i>
+      </button>
+    </div>
+
+    <div class="form-wrapper">
+      <div id="signin-form">
+        <h2 class="form-title">Welcome Back</h2>
+        <p class="form-subtitle">Sign in to access your dashboard.</p>
+        <form>
+          <div class="input-group">
+            <label for="signin-email">Email Address</label>
+            <input type="email" id="signin-email" class="input-field" required>
+          </div>
+          <div class="input-group">
+            <label for="signin-password">Password</label>
+            <input type="password" id="signin-password" class="input-field" required>
+          </div>
+          <button type="submit" class="submit-btn">Sign In</button>
+        </form>
+        <p class="toggle-form-text">
+          No account? <a id="show-signup">Sign up now</a>
+        </p>
+      </div>
+
+      <div id="signup-form" class="hidden">
+        <h2 class="form-title">Create Account</h2>
+        <p class="form-subtitle">Join the future of farming today.</p>
+        <form>
+          <div class="input-group">
+            <label for="signup-email">Email Address</label>
+            <input type="email" id="signup-email" class="input-field" required>
+          </div>
+          <div class="input-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" class="input-field" required>
+          </div>
+          <div class="input-group">
+            <label for="signup-confirm-password">Confirm Password</label>
+            <input type="password" id="signup-confirm-password" class="input-field" required>
+          </div>
+          <div class="input-group">
+            <label>Select Your Role</label>
+            <div class="role-selection">
+              <div class="role-option">
+                <input type="radio" id="role-gardener" name="role" value="gardener" required>
+                <label for="role-gardener" class="role-card">
+                  <i class="fas fa-leaf role-icon"></i>
+                  <div class="role-content">
+                    <div class="role-title">Gardener</div>
+                    <div class="role-description">Manage crops and daily farming operations</div>
+                  </div>
+                </label>
+              </div>
+              <div class="role-option">
+                <input type="radio" id="role-expert" name="role" value="expert" required>
+                <label for="role-expert" class="role-card">
+                  <i class="fas fa-microscope role-icon"></i>
+                  <div class="role-content">
+                    <div class="role-title">Expert</div>
+                    <div class="role-description">Provide analysis and farming expertise</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="submit-btn">Create Account</button>
+        </form>
+        <p class="toggle-form-text">
+          Already have an account? <a id="show-signin">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+</body>
+</html>
