@@ -127,6 +127,27 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .login-btn { background-color: transparent; border: 2px solid var(--primary-glow); color: var(--primary-glow); padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
 .login-btn:hover { background-color: var(--primary-glow); color: var(--bg-color); box-shadow: 0 0 15px var(--glow-shadow); }
 
+/* Login button states */
+.login-btn.logged-in {
+    background-color: var(--primary-glow);
+    color: var(--bg-color);
+    border-color: var(--primary-glow);
+}
+
+.login-btn.logged-in:hover {
+    background-color: var(--secondary-glow);
+    border-color: var(--secondary-glow);
+    color: var(--bg-color);
+}
+
+/* Add user icon when logged in */
+.login-btn.logged-in::before {
+    content: '\f007'; /* Font Awesome user icon */
+    font-family: 'Font Awesome 6 Free', serif;
+    font-weight: 900;
+    margin-right: 0.5rem;
+}
+
 
 /* PAGE CONTENT LAYOUT (Side-by-Side) */
 .page-content {

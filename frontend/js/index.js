@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const interfaceContainer = document.getElementById('leaf-interface');
     const secondaryVeins = document.querySelectorAll('.secondary-vein');
 
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'fa-chart-line',
             title: 'Real-Time Monitoring',
             description: 'Access comprehensive live sensor data for soil conditions, climate parameters, and plant vitality metrics with instant alerts and custom dashboards.',
-            position: { x: '31%', y: '31%' },
+            position: {x: '31%', y: '31%'},
             label: 'Monitor'
         },
         {
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'fa-robot',
             title: 'AI Agronomist',
             description: 'Interact with our advanced AI system for instant agricultural insights, predictive analytics, and personalized crop management recommendations.',
-            position: { x: '28%', y: '48%' },
+            position: {x: '28%', y: '48%'},
             label: 'AI Assistant'
         },
         {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'fa-microscope',
             title: 'Disease Detection',
             description: 'Upload plant imagery for AI-powered disease identification, pest analysis, and automated health assessment with treatment suggestions.',
-            position: { x: '25%', y: '67%' },
+            position: {x: '25%', y: '67%'},
             label: 'Diagnostics'
         },
         {
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'fa-user-tie',
             title: 'Expert Network',
             description: 'Connect with certified agricultural specialists, schedule video consultations, and access expert knowledge for complex farming challenges.',
-            position: { x: '69%', y: '31%' },
+            position: {x: '69%', y: '31%'},
             label: 'Experts'
         },
         {
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'fa-graduation-cap',
             title: 'Knowledge Hub',
             description: 'Explore our extensive library of farming guides, research papers, best practices, and cutting-edge agricultural innovations and techniques.',
-            position: { x: '72%', y: '48%' },
+            position: {x: '72%', y: '48%'},
             label: 'Learning'
         },
         {
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'fa-chart-area',
             title: 'Analytics Suite',
             description: 'Generate comprehensive reports on crop performance, yield predictions, and sustainability metrics for data-driven farming decisions.',
-            position: { x: '75%', y: '67%' },
+            position: {x: '75%', y: '67%'},
             label: 'Analytics'
         }
     ];
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Create initial bees and continuous spawning
-    for(let i = 0; i < 2; i++) {
+    for (let i = 0; i < 2; i++) {
         setTimeout(() => createRealisticBee(), i * 3000);
     }
 
@@ -326,5 +326,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleAnalyticsClick() {
         console.log("Analytics clicked!");
+    }
+
+    // Login/Logout Toggle Functionality
+    const loginToggleBtn = document.getElementById('login-toggle-btn');
+    let isLoggedIn = false;
+
+    // Try to get saved login state
+    try {
+        const response = await fetch('http://localhost:8080/auth/refresh', {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            isLoggedIn = true;
+            console.log('response ok happen here after checking response ok', response)
+        } else {
+            isLoggedIn = false;
+        }
+
+    } catch (e) {
+        isLoggedIn = false;
+    }
+
+// Update button state on page load
+    updateLoginButton();
+    console.log('isLoggedIn: ' + isLoggedIn);
+
+    function updateLoginButton() {
+        if (isLoggedIn) {
+            loginToggleBtn.textContent = 'Logout';
+            loginToggleBtn.classList.add('logged-in');
+        } else {
+            loginToggleBtn.textContent = 'Login';
+            loginToggleBtn.classList.remove('logged-in');
+        }
+    }
+
+    loginToggleBtn.addEventListener('click', () => {
+        isLoggedIn = !isLoggedIn;
+
+        updateLoginButton();
+        
+        if (isLoggedIn) {
+            window.location.href = `http://localhost:63343/frontend/auth.html`
+        } else {
+            logoutUser();
+        }
+    });
+
+    //logout function
+    async function logoutUser() {
+        try {
+            const refreshResponse = await fetch('http://localhost:8080/auth/refresh', {
+                method: 'POST',
+                credentials: 'include' // sends the refreshToken cookie
+            });
+
+            if (!refreshResponse.ok) {
+                throw new Error("Refresh failed");
+            }
+
+            const refreshData = await refreshResponse.json();
+            const newAccessToken = refreshData.accessToken;
+            localStorage.setItem('accessToken', newAccessToken);
+
+            const logoutResponse = await fetch('http://localhost:8080/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${newAccessToken}`
+                },
+                credentials: 'include'
+            });
+
+            const logoutData = await logoutResponse.json();
+
+            if (logoutResponse.ok) {
+                alert(logoutData.message || "Logged out successfully!");
+                localStorage.removeItem('accessToken');
+                window.location.href = 'http://localhost:63343/frontend/index.html';
+            } else {
+                alert("Logout failed.");
+            }
+        } catch (error) {
+            console.error("Logout error:", error);
+            localStorage.removeItem('accessToken');
+            window.location.href = 'http://localhost:63343/frontend/auth.html';
+        }
     }
 });
