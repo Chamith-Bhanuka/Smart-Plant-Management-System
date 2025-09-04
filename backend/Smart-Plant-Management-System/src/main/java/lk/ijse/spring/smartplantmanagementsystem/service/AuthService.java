@@ -27,6 +27,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JWTUtil jwtUtil;
+    private final TokenDanyListService denyListService;
 
     public String register(RegisterDTO registerDTO) {
 
@@ -99,4 +100,21 @@ public class AuthService {
         return new AuthResponseDTO(newAccessToken, refreshToken);
     }
 
+    @Transactional
+    public void logout(String accessToken, String refreshToken) {
+
+        if (accessToken != null && accessToken.startsWith("Bearer ")) {
+            String token = accessToken.substring(7);
+            String jti = jwtUtil.extractJti(token);
+            java.util.Date expiry = jwtUtil.extractExpiration(token);
+            denyListService.addToDenyList(jti, expiry);
+        }
+
+        if (refreshToken != null) {
+            denyListService.addToDenyList(refreshToken, new java.util.Date(System.currentTimeMillis() + 7*24*60*60*1000));
+            refreshTokenRepository.deleteByToken(refreshToken);
+            refreshTokenRepository.flush();
+        }
+
+    }
 }
