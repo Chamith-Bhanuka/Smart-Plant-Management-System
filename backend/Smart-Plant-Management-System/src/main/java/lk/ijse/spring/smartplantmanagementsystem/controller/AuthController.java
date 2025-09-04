@@ -8,6 +8,7 @@ import lk.ijse.spring.smartplantmanagementsystem.dto.AuthResponseDTO;
 import lk.ijse.spring.smartplantmanagementsystem.dto.RegisterDTO;
 import lk.ijse.spring.smartplantmanagementsystem.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,6 +43,16 @@ public class AuthController {
         response.addCookie(refreshCookie);
 
         return ResponseEntity.ok(Map.of("accessToken", authResponseDTO.getAccessToken()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshAccessToken(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No refresh token found");
+        }
+
+        AuthResponseDTO response = authService.refreshAccessToken(refreshToken);
+        return ResponseEntity.ok(Map.of("accessToken", response.getAccessToken()));
     }
 
 }

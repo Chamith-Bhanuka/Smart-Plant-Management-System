@@ -85,4 +85,18 @@ public class AuthService {
         return token;
     }
 
+    public AuthResponseDTO refreshAccessToken(String refreshToken){
+        RefreshToken token = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(()->new RuntimeException("Invalid refresh token"));
+
+        if (token.getExpiryDate().before(new java.util.Date())) {
+            throw new RuntimeException("Refresh token expired");
+        }
+
+        User user = token.getUser();
+        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+        return new AuthResponseDTO(newAccessToken, refreshToken);
+    }
+
 }
