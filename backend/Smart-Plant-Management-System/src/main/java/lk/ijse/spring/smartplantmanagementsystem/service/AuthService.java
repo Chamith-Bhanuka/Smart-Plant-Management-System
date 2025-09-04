@@ -5,6 +5,7 @@ import lk.ijse.spring.smartplantmanagementsystem.entity.Role;
 import lk.ijse.spring.smartplantmanagementsystem.entity.User;
 import lk.ijse.spring.smartplantmanagementsystem.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public String register(RegisterDTO registerDTO) {
 
@@ -21,7 +23,7 @@ public class AuthService {
 
         User user = User.builder()
                 .email(registerDTO.getEmail())
-                .password(registerDTO.getPassword())
+                .password(passwordEncoder.encode(registerDTO.getPassword()))
                 .role(Role.valueOf(registerDTO.getRole()))
                 .build();
 
