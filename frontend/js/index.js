@@ -168,12 +168,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const themeToggle = document.getElementById('theme-toggle');
     const htmlEl = document.documentElement;
 
-    // Try to get saved theme, but don't rely on localStorage
     let savedTheme = 'dark';
     try {
         savedTheme = localStorage.getItem('theme') || 'dark';
     } catch (e) {
-        // Fallback if localStorage is not available
         savedTheme = 'dark';
     }
 
@@ -368,7 +366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         isLoggedIn = !isLoggedIn;
 
         updateLoginButton();
-        
+
         if (isLoggedIn) {
             window.location.href = `http://localhost:63343/frontend/auth.html`
         } else {
