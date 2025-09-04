@@ -98,6 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = document.getElementById('signin-email').value.trim();
         const password = document.getElementById('signin-password').value.trim();
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTarget = urlParams.get('redirect') || 'index';
+
         if (!email || !password) {
             alert("Please enter both email and password.");
             return;
@@ -123,7 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Login successful!");
                 signinForm.reset();
 
-                window.location.href = 'http://localhost:63343/frontend/index.html';
+                window.location.href = `http://localhost:63343/frontend/${redirectTarget}.html`;
+                // window.location.href = 'http://localhost:63343/frontend/index.html';
             } else {
                 alert(result.message || "Login failed. Please check your credentials.");
             }

@@ -53,6 +53,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
+    async function checkAuthAndRedirect(targetPage) {
+        try {
+            const response = await fetch('http://localhost:8080/auth/refresh', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                localStorage.setItem('accessToken', result.accessToken);
+                window.location.href = `http://localhost:63343/frontend/${targetPage}.html`;
+                // http://localhost:63343/frontend/index.html
+            } else {
+                redirectToLogin(targetPage);
+            }
+        } catch (error) {
+            console.error("Auth check failed:", error);
+            redirectToLogin(targetPage);
+        }
+    }
+
+    function redirectToLogin(redirectTarget) {
+        window.location.href = `http://localhost:63343/frontend/auth.html?redirect=${redirectTarget}`;
+    }
+
+
     // leaf nodes
     featureData.forEach((feature, index) => {
         const node = document.createElement('div');
@@ -279,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(randomSpawn, 10000);
 
     function handleMonitorClick() {
-        console.log("Monitor clicked!");
+        checkAuthAndRedirect('monitor');
     }
 
     function handleAIClick() {
