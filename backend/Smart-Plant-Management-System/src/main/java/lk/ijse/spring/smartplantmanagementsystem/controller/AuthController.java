@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lk.ijse.spring.smartplantmanagementsystem.dto.APIResponse;
 import lk.ijse.spring.smartplantmanagementsystem.dto.AuthDTO;
+import lk.ijse.spring.smartplantmanagementsystem.dto.AuthResponseDTO;
 import lk.ijse.spring.smartplantmanagementsystem.dto.RegisterDTO;
 import lk.ijse.spring.smartplantmanagementsystem.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,19 @@ public class AuthController {
                         authService.register(registerDTO)
                 )
         );
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthDTO authDTO, HttpServletResponse response){
+        AuthResponseDTO authResponseDTO = authService.authenticate(authDTO);
+
+        Cookie refreshCookie = new Cookie("refreshToken", authResponseDTO.getRefreshToken());
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(7*24*60*60);
+        response.addCookie(refreshCookie);
+
+        return ResponseEntity.ok(Map.of("accessToken", authResponseDTO.getAccessToken()));
     }
 
 }
