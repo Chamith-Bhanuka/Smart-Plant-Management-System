@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    // IMPROVED LEAF NODE CREATION & HOVER CARDS
+    // leaf nodes
     featureData.forEach((feature, index) => {
         const node = document.createElement('div');
         node.className = 'node';
@@ -107,15 +107,38 @@ document.addEventListener('DOMContentLoaded', () => {
         node.addEventListener('click', () => {
             showModal(`Launching Module`, `🌱 The ${feature.title} module is now loading...`);
         });
+
+        node.addEventListener('click', () => {
+            switch (feature.id) {
+                case 'monitor':
+                    handleMonitorClick();
+                    break;
+                case 'chat':
+                    handleAIClick();
+                    break;
+                case 'disease':
+                    handleDiagnosticsClick();
+                    break;
+                case 'expert':
+                    handleExpertClick();
+                    break;
+                case 'articles':
+                    handleLearningClick();
+                    break;
+                case 'reports':
+                    handleAnalyticsClick();
+                    break;
+            }
+        });
     });
 
-    // SETUP WIZARD BUTTON EVENT
+    // setup wizard button
     const setupWizardBtn = document.getElementById('setup-wizard-btn');
     setupWizardBtn.addEventListener('click', () => {
         showModal('Setup Wizard', '🚀 Welcome to SmartFarm Setup! We\'ll guide you through configuring your smart farming system step by step.');
     });
 
-    // THEME TOGGLE FUNCTIONALITY (Fixed localStorage usage)
+    // theme toggle
     const themeToggle = document.getElementById('theme-toggle');
     const htmlEl = document.documentElement;
 
@@ -166,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // REALISTIC BEE ANIMATION SCRIPT
+    // bee animation
     const beeContainer = document.getElementById('bee-container');
     const messages = [
         "New soil data available",
@@ -254,4 +277,28 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(randomSpawn, Math.random() * 10000 + 5000);
     };
     setTimeout(randomSpawn, 10000);
+
+    function handleMonitorClick() {
+        console.log("Monitor clicked!");
+    }
+
+    function handleAIClick() {
+        console.log("AI Assistant clicked!");
+    }
+
+    function handleDiagnosticsClick() {
+        console.log("Diagnostics clicked!");
+    }
+
+    function handleExpertClick() {
+        console.log("Expert clicked!");
+    }
+
+    function handleLearningClick() {
+        console.log("Learning clicked!");
+    }
+
+    function handleAnalyticsClick() {
+        console.log("Analytics clicked!");
+    }
 });
