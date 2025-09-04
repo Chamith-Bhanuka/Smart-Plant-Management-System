@@ -89,6 +89,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // sign in
+    const signinForm = document.querySelector('#signin-form form');
+
+    signinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('signin-email').value.trim();
+        const password = document.getElementById('signin-password').value.trim();
+
+        if (!email || !password) {
+            alert("Please enter both email and password.");
+            return;
+        }
+
+        const payload = { email, password };
+
+        try {
+            const response = await fetch('http://localhost:8080/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+
+                localStorage.setItem('accessToken', result.accessToken);
+                console.log('accessToken ', result.accessToken);
+
+                alert("Login successful!");
+                signinForm.reset();
+
+                window.location.href = 'http://localhost:63343/frontend/index.html';
+            } else {
+                alert(result.message || "Login failed. Please check your credentials.");
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            alert("Something went wrong. Please try again.");
+        }
+    });
+
+
     // auto scrolling
     const roleInputs = document.querySelectorAll('input[name="role"]');
     const formWrapper = document.querySelector('.form-wrapper');
