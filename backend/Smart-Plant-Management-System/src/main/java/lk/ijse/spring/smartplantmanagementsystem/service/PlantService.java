@@ -75,7 +75,10 @@ public class PlantService {
                 scientificName,
                 commonName,
                 score,
-                filePath
+                filePath,
+                null,
+                null,
+                null
         );
         return plantRepository.save(plant);
     }

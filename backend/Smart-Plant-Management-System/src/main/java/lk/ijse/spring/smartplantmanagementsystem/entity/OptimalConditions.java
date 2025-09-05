@@ -2,7 +2,6 @@ package lk.ijse.spring.smartplantmanagementsystem.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,23 +11,18 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class User {
-
+public class OptimalConditions {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String email;
+    private Double idealTemperature;
+    private Double idealHumidity;
+    private Double idealRainfall;
 
-    @Enumerated(EnumType.STRING)
-    private Role role;
+    private String soilType;
+    private String sunlightExposure;
 
-    private String password;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private RefreshToken refreshToken;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "optimalConditions")
     private List<Plant> plants;
 }
