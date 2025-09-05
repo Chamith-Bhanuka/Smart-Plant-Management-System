@@ -1,12 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Monitor Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFarm Monitor | Command Center UI</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/monitor.css">
 </head>
 <body>
 
-<h1>Monitor Page</h1>
+<div class="page-container">
+    <header class="header">
+        <div class="header-container">
+            <a href="#" class="logo"><i class="fas fa-seedling logo-icon"></i><span>SmartFarm Nexus</span></a>
 
+            <!-- Search Bar in Header -->
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="global-search" placeholder="Search plants, zones, sensors...">
+            </div>
+
+            <div class="header-controls">
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="dark-btn" title="Dark Mode"><i class="fas fa-moon"></i></button>
+                    <button class="theme-btn" id="light-btn" title="Light Mode"><i class="fas fa-sun"></i></button>
+                </div>
+                <button class="header-btn" onclick="refreshData()" id="refreshBtn" title="Refresh Data"><i class="fas fa-sync-alt"></i></button>
+                <button class="header-btn" onclick="showSettings()" title="Settings"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="monitor-layout">
+
+            <aside class="sidebar sidebar-left">
+                <div class="card metric-card" id="temperature-metric" onclick="showComparison('temperature')">
+                    <div class="metric-info"><div class="metric-icon"><i class="fas fa-thermometer-half"></i></div><div><div class="metric-label">Air Temperature</div><div class="metric-value">24°C</div></div></div><i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+                </div>
+                <div class="card metric-card" id="humidity-metric" onclick="showComparison('humidity')">
+                    <div class="metric-info"><div class="metric-icon"><i class="fas fa-tint"></i></div><div><div class="metric-label">Air Humidity</div><div class="metric-value">68%</div></div></div><i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+                </div>
+                <div class="card metric-card" id="soil_moisture-metric" onclick="showComparison('soil_moisture')">
+                    <div class="metric-info"><div class="metric-icon"><i class="fas fa-water"></i></div><div><div class="metric-label">Soil Moisture</div><div class="metric-value">45%</div></div></div><i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+                </div>
+                <div class="card metric-card" id="light_intensity-metric" onclick="showComparison('light_intensity')">
+                    <div class="metric-info"><div class="metric-icon"><i class="fas fa-lightbulb"></i></div><div><div class="metric-label">Light Intensity</div><div class="metric-value">850 lux</div></div></div><i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+                </div>
+            </aside>
+
+            <section class="main-panel">
+                <div class="card plant-card">
+                    <div class="plant-image-wrapper"><img src="https://images.unsplash.com/photo-1592845675346-c573b4011e95?w=800&h=600&fit=crop&crop=center" alt="Tomato Plant" class="plant-image" id="plant-image"><div class="health-score-badge score-warning" id="healthScore">72<span>Health</span></div></div>
+                    <div class="plant-info">
+                        <div class="plant-title-bar">
+                            <div class="plant-title">
+                                <h2 id="plant-title-heading">Plant Health Analysis</h2>
+                                <p id="plant-zone">Tomato Plant - Zone A-1</p>
+                            </div>
+                        </div>
+                        <div class="stat-grid">
+                            <div class="stat-item"><div class="stat-label">Plant Age</div><div class="stat-value" id="stat-age">45 days</div></div>
+                            <div class="stat-item"><div class="stat-label">Growth Stage</div><div class="stat-value" id="stat-stage">Flowering</div></div>
+                            <div class="stat-item"><div class="stat-label">Expected Harvest</div><div class="stat-value" id="stat-harvest">25 days</div></div>
+                            <div class="stat-item"><div class="stat-label">Yield Prediction</div><div class="stat-value" id="stat-yield">2.3 kg</div></div>
+                        </div>
+                        <div id="healthContent">
+                            <div class="health-status">
+                                <p>Plant is in flowering stage with healthy root development. Growth rate is within normal parameters.</p>
+                                <button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-search"></i> Check for Diseases</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="sidebar sidebar-right">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-cloud-sun"></i> Weather Details</div>
+                    <div class="detail-grid">
+                        <div class="detail-item" id="wind_speed-detail" onclick="showComparison('wind_speed')"><div class="detail-value">12</div><div class="detail-label">Wind (km/h)</div></div>
+                        <div class="detail-item" id="precipitation-detail" onclick="showComparison('precipitation')"><div class="detail-value">0 mm</div><div class="detail-label">Precipitation</div></div>
+                        <div class="detail-item" id="uv_index-detail" onclick="showComparison('uv_index')"><div class="detail-value">5</div><div class="detail-label">UV Index</div></div>
+                        <div class="detail-item" id="cloud_cover-detail" onclick="showComparison('cloud_cover')"><div class="detail-value">35%</div><div class="detail-label">Cloud Cover</div></div>
+                        <div class="detail-item" id="evapotranspiration-detail" onclick="showComparison('evapotranspiration')"><div class="detail-value">3.2</div><div class="detail-label">ET (mm/day)</div></div>
+                        <div class="detail-item" id="pressure-detail" onclick="showComparison('pressure')"><div class="detail-value">1013</div><div class="detail-label">Pressure (hPa)</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-flask"></i> Soil Vitals</div>
+                    <div class="detail-grid">
+                        <div class="detail-item" id="soil_temp-detail" onclick="showComparison('soil_temp')"><div class="detail-value">22°C</div><div class="detail-label">Soil Temp</div></div>
+                        <div class="detail-item" id="ph_level-detail" onclick="showComparison('ph_level')"><div class="detail-value">6.8</div><div class="detail-label">pH Level</div></div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+
+<div class="modal-overlay" id="comparisonModal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="modalTitle">Data Analysis</h2><button class="close-btn" onclick="closeComparison()"><i class="fas fa-times"></i></button></div><div class="comparison-grid" id="comparisonGrid"></div></div></div>
+
+<script src="js/monitor.js"></script>
 </body>
 </html>

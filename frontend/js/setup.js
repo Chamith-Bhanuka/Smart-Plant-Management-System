@@ -179,6 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 nextBtn.innerHTML = 'Save & Monitor';
                 nextBtn.disabled = false;
             }, 2000);
+
+            window.location.href = 'http://localhost:63343/frontend/monitor.html';
         }
     }
     function goToPrevStep() {
