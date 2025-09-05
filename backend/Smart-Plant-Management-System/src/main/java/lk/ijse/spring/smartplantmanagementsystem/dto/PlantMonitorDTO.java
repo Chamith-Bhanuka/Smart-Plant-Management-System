@@ -15,7 +15,7 @@ public class PlantMonitorDTO {
     private Double longitude;
 
     private WeatherDTO weather;
-    private OptimalConditions optimal;
+    private OptimalDTO optimal;
 
     private SensorDTO sensor;
 }
