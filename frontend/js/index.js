@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // setup wizard button
     const setupWizardBtn = document.getElementById('setup-wizard-btn');
     setupWizardBtn.addEventListener('click', () => {
-        showModal('Setup Wizard', '🚀 Welcome to SmartFarm Setup! We\'ll guide you through configuring your smart farming system step by step.');
+        checkAuthAndRedirect('setup');
     });
 
     // theme toggle
