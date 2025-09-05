@@ -14,16 +14,33 @@ document.addEventListener('DOMContentLoaded', () => {
     darkBtn.addEventListener('click', () => setTheme('dark'));
     lightBtn.addEventListener('click', () => setTheme('light'));
 
-    // Global search functionality
+    // Global search across monitored plants
     globalSearch.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             performGlobalSearch();
         }
     });
 
+    // Modal close on backdrop click
+    document.getElementById('comparisonModal').addEventListener('click', (e) => {
+        if (e.target.id === 'comparisonModal') closeComparison();
+    });
+
+    // ESC closes modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeComparison();
+    });
+
+    // Add simple spin animation (used by Refresh)
+    const styleSheet = document.createElement('style');
+    styleSheet.innerText = '@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }';
+    document.head.appendChild(styleSheet);
+
     animateCards();
+    loadMonitorData(); // fetch backend data on load
 });
 
+// ===== Theme =====
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     document.getElementById('dark-btn').classList.toggle('active', theme === 'dark');
@@ -35,67 +52,260 @@ function setTheme(theme) {
     }
 }
 
+// ===== Global search (monitored plants) =====
+let monitorCache = []; // array of PlantMonitorDTO
 function performGlobalSearch() {
     const searchTerm = document.getElementById('global-search').value.toLowerCase().trim();
-    const plantDatabase = {
-        'tomato': {
-            name: 'Tomato Plant', zone: 'Zone A-1',
-            image: 'https://images.unsplash.com/photo-1592845675346-c573b4011e95?w=800&h=600&fit=crop&crop=center',
-            age: '45 days', stage: 'Flowering', harvest: '25 days', yield: '2.3 kg'
-        },
-        'lettuce': {
-            name: 'Lettuce Crop', zone: 'Zone B-3',
-            image: 'https://images.unsplash.com/photo-1556996433-6b2a33604a18?w=800&h=600&fit=crop&crop=center',
-            age: '25 days', stage: 'Vegetative', harvest: '15 days', yield: '0.8 kg'
-        },
-        'corn': {
-            name: 'Corn Stalk', zone: 'Zone C-5',
-            image: 'https://images.unsplash.com/photo-1541539292558-52819035a396?w=800&h=600&fit=crop&crop=center',
-            age: '60 days', stage: 'Tasseling', harvest: '30 days', yield: '1.5 kg'
-        }
-    };
+    if (!searchTerm) return;
 
-    const plantData = plantDatabase[searchTerm];
-    if (plantData) {
-        document.getElementById('plant-image').src = plantData.image;
-        document.getElementById('plant-title-heading').textContent = 'Plant Health Analysis';
-        document.getElementById('plant-zone').textContent = `${plantData.name} - ${plantData.zone}`;
-        document.getElementById('stat-age').textContent = plantData.age;
-        document.getElementById('stat-stage').textContent = plantData.stage;
-        document.getElementById('stat-harvest').textContent = plantData.harvest;
-        document.getElementById('stat-yield').textContent = plantData.yield;
+    const plant = monitorCache.find((p) =>
+        (p.scientificName && p.scientificName.toLowerCase().includes(searchTerm)) ||
+        (p.commonName && p.commonName.toLowerCase().includes(searchTerm))
+    );
 
-        // Scroll to main panel
+    if (plant) {
+        renderPlantMonitor(plant);
         document.querySelector('.main-panel').scrollIntoView({ behavior: 'smooth' });
     } else {
-        alert('Plant not found in database. Try "tomato", "lettuce", or "corn".');
+        alert('Plant not found in your monitored list.');
     }
 }
 
-const optimalConditions = {
-    temperature: { optimal: '20-26°C', current: '24°C', status: 'good', description: 'Temperature is within the optimal range.' },
-    humidity: { optimal: '60-70%', current: '68%', status: 'good', description: 'Humidity levels are ideal.' },
-    soil_moisture: { optimal: '50-70%', current: '45%', status: 'warning', description: 'Soil moisture is slightly below optimal range. Consider irrigation.' },
-    light_intensity: { optimal: '1000-1500 lux', current: '850 lux', status: 'poor', description: 'Light intensity is below optimal range. Consider supplemental lighting.' },
-    wind_speed: { optimal: '5-15 km/h', current: '12 km/h', status: 'good', description: 'Wind speed provides adequate air circulation.' },
-    pressure: { optimal: '1010-1020 hPa', current: '1013 hPa', status: 'good', description: 'Atmospheric pressure is normal.' },
-    soil_temp: { optimal: '18-24°C', current: '22°C', status: 'good', description: 'Soil temperature is perfect for root development.' },
-    ph_level: { optimal: '6.0-7.0', current: '6.8', status: 'good', description: 'pH level is excellent for nutrient availability.' },
-    precipitation: { optimal: '0-2 mm/hr', current: '0 mm', status: 'good', description: 'No precipitation, ideal for scheduled irrigation.' },
-    uv_index: { optimal: '3-7', current: '5', status: 'good', description: 'Moderate UV index, good for photosynthesis without causing scorch.' },
-    cloud_cover: { optimal: '< 40%', current: '35%', status: 'good', description: 'Low cloud cover ensures good light availability.' },
-    evapotranspiration: { optimal: '3-5 mm/day', current: '3.2 mm/day', status: 'good', description: 'Normal water loss rate from soil and plants.' }
-};
+// Keep token only in memory
+let accessToken = null;
 
+// Always refresh before a protected call
+async function ensureAccessToken() {
+    try {
+        const res = await fetch('http://localhost:8080/auth/refresh', {
+            method: 'POST',
+            credentials: 'include', // important for cookie-based refresh
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!res.ok) throw new Error("Failed to refresh token");
+
+        const data = await res.json();
+        accessToken = data.accessToken;
+        console.log("♻️ Got new token:", accessToken);
+    } catch (e) {
+        console.warn("❌ Refresh failed. Redirecting to login...");
+        window.location.href = 'http://localhost:63343/frontend/auth.html';
+    }
+}
+
+// Generic helper for GET/POST with current token
+async function apiFetch(url, options = {}) {
+    await ensureAccessToken();
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+}
+
+// ===== Data loading & rendering =====
+async function loadMonitorData() {
+    try {
+        const res = await apiFetch('http://localhost:8080/plants/monitor', { method: 'GET' });
+        if (!res.ok) throw new Error('Failed to load monitor data');
+        monitorCache = await res.json();
+
+        if (monitorCache.length > 0) {
+            renderPlantMonitor(monitorCache[0]);
+        } else {
+            console.warn('No plants found for this user.');
+            clearMonitorUI();
+        }
+    } catch (err) {
+        console.error('Monitor load error:', err);
+    }
+}
+
+function clearMonitorUI() {
+    document.getElementById('plant-title-heading').textContent = 'Plant Health Analysis';
+    document.getElementById('plant-zone').textContent = 'No plant selected';
+    setMetricValue('temperature-metric', '--');
+    setMetricValue('humidity-metric', '--');
+    setMetricValue('soil_moisture-metric', '--');
+    setMetricValue('light_intensity-metric', '--');
+    setDetailValue('wind_speed-detail', '--');
+    setDetailValue('precipitation-detail', '--');
+    setDetailValue('uv_index-detail', '--');
+    setDetailValue('cloud_cover-detail', '--');
+    setDetailValue('evapotranspiration-detail', '--');
+    setDetailValue('pressure-detail', '--');
+}
+
+// Render a single plant into the existing DOM
+function renderPlantMonitor(plant) {
+    // Title and meta
+    const sci = plant.scientificName || 'Plant';
+    const common = plant.commonName ? ` (${plant.commonName})` : '';
+    document.getElementById('plant-title-heading').textContent = `${sci}${common}`;
+    document.getElementById('plant-zone').textContent =
+        `${sci} - (${plant.latitude?.toFixed?.(4) || '?'}, ${plant.longitude?.toFixed?.(4) || '?'})`;
+
+    //Set plant image
+    const filename = plant.imagePath?.split('/').pop(); // Extract just the filename
+    if (filename) {
+        document.getElementById('plant-image').src = `http://localhost:8080/uploads/${filename}`;
+    } else {
+        document.getElementById('plant-image').src = 'default-image.jpg'; // fallback if missing
+    }
+
+    // Right sidebar: Weather details (from DB latest)
+    const w = plant.weather || {};
+    setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
+    setDetailValue('precipitation-detail', w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--');
+    setDetailValue('uv_index-detail', w.uvIndex != null ? `${formatNumber(w.uvIndex)}` : '--');
+    setDetailValue('cloud_cover-detail', w.cloudCover != null ? `${formatNumber(w.cloudCover)}%` : '--');
+    setDetailValue('evapotranspiration-detail', w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--');
+    setDetailValue('pressure-detail', w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--');
+
+    // Left metrics: Air temp & humidity from weather (DB)
+    setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
+    setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
+
+    // Sensors handled separately; if present, render them
+    const s = plant.sensor || {};
+    setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
+    setMetricValue('light_intensity-metric', s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--');
+
+    // Build modal comparison map dynamically
+    buildOptimalConditionsMap(plant);
+}
+
+// ===== Helpers to set UI text =====
+function setDetailValue(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const valueEl = el.querySelector('.detail-value');
+    if (valueEl) valueEl.textContent = text ?? '--';
+}
+
+function setMetricValue(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const valueEl = el.querySelector('.metric-value');
+    if (valueEl) valueEl.textContent = text ?? '--';
+}
+
+function formatNumber(n) {
+    if (n == null || Number.isNaN(n)) return '--';
+    const x = Number(n);
+    return Number.isInteger(x) ? x : x.toFixed(1);
+}
+
+// ===== Optimal conditions map for modal (built from DB data) =====
+let optimalConditionsMap = {};
+
+function buildOptimalConditionsMap(plant) {
+    const opt = plant.optimal || {};
+    const w = plant.weather || {};
+    const s = plant.sensor || {};
+
+    optimalConditionsMap = {
+        temperature: {
+            optimal: rangeOrValue(opt.idealTemperature, '°C'),
+            current: w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--',
+            status: statusFor(w.airTemperature, opt.idealTemperature, 2),
+            description: `Target air temperature around ${formatNumber(opt.idealTemperature)}°C for ${opt.plantName || 'this plant'}.`
+        },
+        humidity: {
+            optimal: rangeOrValue(opt.idealHumidity, '%'),
+            current: w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--',
+            status: statusFor(w.airHumidity, opt.idealHumidity, 5),
+            description: `Aim for relative humidity near ${formatNumber(opt.idealHumidity)}%.`
+        },
+        soil_moisture: {
+            optimal: '50-70%', // rule-of-thumb; add field later if you want DB-driven values
+            current: s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--',
+            status: qualitative(s.soilMoisture, 50, 70),
+            description: 'Keep soil moisture in optimal range; irrigate if below.'
+        },
+        light_intensity: {
+            optimal: opt.sunlightExposure || 'Full sun / Partial shade',
+            current: s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--',
+            status: 'good',
+            description: 'Adjust shade or supplemental lighting based on growth stage.'
+        },
+        wind_speed: {
+            optimal: '5-15 km/h',
+            current: w.wind != null ? `${formatNumber(w.wind)} km/h` : '--',
+            status: qualitative(w.wind, 5, 15),
+            description: 'Moderate wind improves airflow; too high risks damage.'
+        },
+        precipitation: {
+            optimal: opt.idealRainfall != null ? `${formatNumber(opt.idealRainfall)} mm/day` : '--',
+            current: w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--',
+            status: statusFor(w.precipitation, opt.idealRainfall, 2),
+            description: 'Use rainfall + irrigation to meet daily water needs.'
+        },
+        uv_index: {
+            optimal: '3-7',
+            current: w.uvIndex != null ? `${formatNumber(w.uvIndex)}` : '--',
+            status: qualitative(w.uvIndex, 3, 7),
+            description: 'Moderate UV supports photosynthesis; very high may scorch leaves.'
+        },
+        cloud_cover: {
+            optimal: '< 40%',
+            current: w.cloudCover != null ? `${formatNumber(w.cloudCover)}%` : '--',
+            status: w.cloudCover != null ? (w.cloudCover < 40 ? 'good' : 'warning') : 'warning',
+            description: 'Lower cloud cover increases light availability.'
+        },
+        evapotranspiration: {
+            optimal: '3-5 mm/day',
+            current: w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--',
+            status: qualitative(w.evapotranspiration, 3, 5),
+            description: 'Use ET to plan irrigation volume and timing.'
+        },
+        pressure: {
+            optimal: '1010-1020 hPa',
+            current: w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--',
+            status: qualitative(w.pressure, 1010, 1020),
+            description: 'Normal pressure reflects stable local weather.'
+        }
+    };
+}
+
+// Range/value helpers for modal
+function rangeOrValue(center, unit) {
+    if (center == null) return '--';
+    // Show a friendly ± band for display; adjust as needed
+    const delta = unit === '%' ? 5 : 2;
+    const low = (Number(center) - delta).toFixed(0);
+    const high = (Number(center) + delta).toFixed(0);
+    return `${low}-${high} ${unit}`;
+}
+
+function statusFor(current, target, tol) {
+    if (current == null || target == null) return 'warning';
+    const diff = Math.abs(Number(current) - Number(target));
+    if (diff <= tol) return 'good';
+    if (diff <= tol * 2) return 'warning';
+    return 'critical';
+}
+
+function qualitative(value, low, high) {
+    if (value == null) return 'warning';
+    const v = Number(value);
+    if (v < low || v > high) return 'warning';
+    return 'good';
+}
+
+// ===== Comparison modal (dynamic) =====
 function showComparison(type) {
     const modal = document.getElementById('comparisonModal');
     const titleEl = document.getElementById('modalTitle');
     const grid = document.getElementById('comparisonGrid');
-    const data = optimalConditions[type];
+    const data = optimalConditionsMap[type];
 
     const element = document.getElementById(`${type}-metric`) || document.getElementById(`${type}-detail`);
     if (!element || !data) {
-        console.error("Could not find element or data for type:", type);
+        console.error('Missing element or data for type:', type);
         return;
     }
 
@@ -106,9 +316,20 @@ function showComparison(type) {
     const statusText = data.status === 'good' ? 'Optimal' : data.status === 'warning' ? 'Warning' : 'Critical';
 
     grid.innerHTML = `
-        <div class="comparison-item"><div class="comparison-label">Current Reading</div><div class="comparison-value">${data.current}</div><div class="sensor-status ${statusClass}">${statusText}</div></div>
-        <div class="comparison-item"><div class="comparison-label">Optimal Range</div><div class="comparison-value">${data.optimal}</div></div>
-        <div class="comparison-item" style="grid-column: 1 / -1;"><div class="comparison-label">Analysis & Recommendations</div><p class="comparison-description">${data.description}</p></div>`;
+    <div class="comparison-item">
+      <div class="comparison-label">Current Reading</div>
+      <div class="comparison-value">${data.current}</div>
+      <div class="sensor-status ${statusClass}">${statusText}</div>
+    </div>
+    <div class="comparison-item">
+      <div class="comparison-label">Optimal Range</div>
+      <div class="comparison-value">${data.optimal}</div>
+    </div>
+    <div class="comparison-item" style="grid-column: 1 / -1;">
+      <div class="comparison-label">Analysis & Recommendations</div>
+      <p class="comparison-description">${data.description}</p>
+    </div>
+  `;
     modal.classList.add('visible');
 }
 
@@ -116,6 +337,7 @@ function closeComparison() {
     document.getElementById('comparisonModal').classList.remove('visible');
 }
 
+// ===== Health toggle (kept from your UI) =====
 let isDiseaseMode = false;
 function toggleHealthMode() {
     const healthContent = document.getElementById('healthContent');
@@ -124,29 +346,43 @@ function toggleHealthMode() {
     if (isDiseaseMode) {
         healthScore.className = 'health-score-badge score-critical';
         healthScore.innerHTML = `45 <span>Health</span>`;
-        healthContent.innerHTML = `<div class="health-status disease-alert"><h4 style="margin-bottom: 0.5rem; color: var(--danger);">Disease Alert: Nutrient Deficiency</h4><p>Early signs of nitrogen deficiency observed. Yellowing on lower leaves indicates potential nutrient stress.</p><button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-arrow-left"></i> Back to General Status</button></div>`;
+        healthContent.innerHTML = `<div class="health-status disease-alert">
+      <h4 style="margin-bottom: 0.5rem; color: var(--danger);">Disease Alert: Nutrient Deficiency</h4>
+      <p>Early signs of nitrogen deficiency observed. Yellowing on lower leaves indicates potential nutrient stress.</p>
+      <button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-arrow-left"></i> Back to General Status</button>
+    </div>`;
     } else {
         healthScore.className = 'health-score-badge score-warning';
         healthScore.innerHTML = `72 <span>Health</span>`;
-        healthContent.innerHTML = `<div class="health-status"><p>Plant is in flowering stage with healthy root development. Growth rate is within normal parameters.</p><button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-search"></i> Check for Diseases</button></div>`;
+        healthContent.innerHTML = `<div class="health-status">
+      <p>Plant is in flowering stage with healthy root development. Growth rate is within normal parameters.</p>
+      <button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-search"></i> Check for Diseases</button>
+    </div>`;
     }
 }
 
-function refreshData() {
+// ===== Refresh button: re-pull from backend =====
+async function refreshData() {
     const refreshBtn = document.getElementById('refreshBtn');
     const refreshIcon = refreshBtn.querySelector('.fa-sync-alt');
     refreshBtn.disabled = true;
     refreshIcon.style.animation = 'spin 1s linear infinite';
-    setTimeout(() => {
-        refreshBtn.disabled = false;
-        refreshIcon.style.animation = '';
-    }, 1500);
+    try {
+        await loadMonitorData();
+    } finally {
+        setTimeout(() => {
+            refreshBtn.disabled = false;
+            refreshIcon.style.animation = '';
+        }, 500);
+    }
 }
 
+// ===== Settings stub (kept) =====
 function showSettings() {
     alert('⚙️ Settings Panel Opened');
 }
 
+// ===== Entrance animation (kept) =====
 function animateCards() {
     document.querySelectorAll('.card').forEach((card, index) => {
         card.style.opacity = '0';
@@ -158,15 +394,3 @@ function animateCards() {
         }, index * 80);
     });
 }
-
-document.getElementById('comparisonModal').addEventListener('click', (e) => {
-    if (e.target.id === 'comparisonModal') closeComparison();
-});
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeComparison();
-});
-
-const styleSheet = document.createElement("style");
-styleSheet.innerText = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
-document.head.appendChild(styleSheet);
