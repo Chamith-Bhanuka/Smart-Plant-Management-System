@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- STATE MANAGEMENT ---
+    //state management
     let currentStep = 1;
     const totalSteps = 4;
     const formData = {
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         environment: null
     };
 
-    // --- ELEMENT SELECTORS ---
+    //element selectors
     const stepIndicator = document.getElementById('step-indicator');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
@@ -21,21 +21,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageDropZone = document.getElementById('image-drop-zone');
     const themeToggle = document.getElementById('theme-toggle');
 
-    // --- MAP ELEMENTS ---
+    //map element
     const mapSearchInput = document.getElementById('map-search-input');
     const mapSearchBtn = document.getElementById('map-search-btn');
 
-    // --- BEE DELIVERY ELEMENTS ---
+    //bee delivery element
     const beeContainer = document.getElementById('bee-delivery-container');
     const deliveryBee = document.getElementById('delivery-bee');
     const beeCarriedImage = document.getElementById('bee-carried-image');
 
-    // --- LOADING SCREEN ELEMENTS ---
+    //loading screen element
     const loadingScreen = document.getElementById('esp32-loading-screen');
     const loadingProgressBar = document.getElementById('loading-progress-bar');
     const loadingStatusText = document.getElementById('loading-status-text');
 
-    // --- THEME TOGGLE FUNCTIONALITY ---
+    //theme toggle
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -44,11 +44,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     themeToggle.addEventListener('click', toggleTheme);
 
-    // Initialize theme from localStorage
+    // initialized theme
     const savedTheme = 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
 
-    // --- MAP INITIALIZATION ---
+    //map initializing
     let map;
     let marker;
     function initMap() {
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- MAP SEARCH FUNCTIONALITY ---
+    //map search
     async function searchLocation(query) {
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- FORM NAVIGATION LOGIC ---
+    //navigation
     function updateStepView() {
         formSteps.forEach(step => {
             step.classList.remove('active');
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     nextBtn.addEventListener('click', goToNextStep);
     prevBtn.addEventListener('click', goToPrevStep);
 
-    // --- STEP VALIDATION LOGIC ---
+    //step validation
     function validateStep() {
         let isValid = false;
         switch(currentStep) {
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nextBtn.disabled = !isValid;
     }
 
-    // --- ESP32 LOADING SIMULATION ---
+    //esp32 loading
     function showESP32Loading() {
         loadingScreen.classList.add('active');
 
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLoadingStep();
     }
 
-    // --- REALISTIC BEE DELIVERY ANIMATION ---
+    //bee animation
     function handleImageSelection(imageUrl) {
         formData.plantImage = imageUrl;
         beeCarriedImage.src = imageUrl;
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4500);
     }
 
-    // --- SPARKLE EFFECT ---
+    //animation
     function createSparkles(x, y) {
         for (let i = 0; i < 8; i++) {
             const sparkle = document.createElement('div');
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- EVENT LISTENERS FOR STEP 1 ---
+    // event listeners for step1
     optionCards.forEach(card => {
         card.addEventListener('click', () => {
             const source = card.dataset.source;
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- WEB SEARCH FUNCTIONALITY ---
+    //web search functionality
     function performWebSearch() {
         const query = webSearchInput.value.trim();
         if (!query) return;
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- EVENT LISTENERS FOR STEP 3 ---
+    //event listeners for step3
     document.querySelectorAll('.env-radio').forEach(radio => {
         radio.addEventListener('change', (e) => {
             formData.environment = e.target.value;
@@ -366,6 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- INITIALIZE ---
+    //initialize
     updateStepView();
 });
