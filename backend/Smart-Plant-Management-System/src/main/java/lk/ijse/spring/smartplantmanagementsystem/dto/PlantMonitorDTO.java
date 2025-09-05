@@ -1,5 +1,9 @@
 package lk.ijse.spring.smartplantmanagementsystem.dto;
 
+import lk.ijse.spring.smartplantmanagementsystem.entity.OptimalConditions;
+import lombok.Data;
+
+@Data
 public class PlantMonitorDTO {
     private Long plantId;
     private String scientificName;
@@ -9,5 +13,9 @@ public class PlantMonitorDTO {
 
     private Double latitude;
     private Double longitude;
-    
+
+    private WeatherDTO weather;
+    private OptimalConditions optimal;
+
+    private SensorDTO sensor;
 }
