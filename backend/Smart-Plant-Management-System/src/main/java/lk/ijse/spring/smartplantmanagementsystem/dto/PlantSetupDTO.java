@@ -8,5 +8,4 @@ public class PlantSetupDTO {
     private MultipartFile image;
     private Double latitude;
     private Double longitude;
-    private Long optimalConditionsId;
 }

@@ -16,6 +16,9 @@ public class OptimalConditions {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private String plantName;
+
     private Double idealTemperature;
     private Double idealHumidity;
     private Double idealRainfall;
