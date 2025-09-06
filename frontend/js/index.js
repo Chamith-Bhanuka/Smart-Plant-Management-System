@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleAIClick() {
-        console.log("AI Assistant clicked!");
+        checkAuthAndRedirect('ai');
     }
 
     function handleDiagnosticsClick() {
