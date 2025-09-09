@@ -224,4 +224,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initialize();
+
+
+    plantGrid.addEventListener('click', async (e) => {
+        const card = e.target.closest('.plant-card');
+        if (card) {
+            const plantName = card.dataset.plantName;
+            addMessageToConversation(`Tell me about my ${plantName}.`, 'user');
+            plantSelectorPanel.classList.remove('open');
+
+            try {
+                const res = await fetch(`http://localhost:8080/chat/plant?name=${encodeURIComponent(plantName)}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                const reply = formatPlantChatResponse(data);
+                addMessageToConversation(reply, 'ai');
+            } catch (err) {
+                addMessageToConversation(`Sorry, I couldn't load data for ${plantName}.`, 'ai');
+            }
+        }
+    });
+
 });

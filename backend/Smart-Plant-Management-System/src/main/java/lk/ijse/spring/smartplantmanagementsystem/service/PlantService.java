@@ -1,8 +1,7 @@
 package lk.ijse.spring.smartplantmanagementsystem.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lk.ijse.spring.smartplantmanagementsystem.dto.PlantResponseDTO;
-import lk.ijse.spring.smartplantmanagementsystem.dto.PlantSetupDTO;
+import lk.ijse.spring.smartplantmanagementsystem.dto.*;
 import lk.ijse.spring.smartplantmanagementsystem.entity.*;
 import lk.ijse.spring.smartplantmanagementsystem.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -200,6 +200,66 @@ public class PlantService {
         }
 
         return dto;
+    }
+
+    public PlantChatDTO getPlantChatData(String name, String userEmail) {
+        User user = userRepository.findByEmail(userEmail).orElseThrow();
+        Plant plant = (Plant) plantRepository.findByUserAndScientificNameIgnoreCase(user, name)
+                .orElseThrow(() -> new RuntimeException("Plant not found"));
+
+        PlantChatDTO dto = new PlantChatDTO();
+        dto.setPlantId(plant.getId());
+        dto.setScientificName(plant.getScientificName());
+        dto.setCommonName(plant.getCommonName());
+        dto.setImagePath(plant.getImagePath());
+        dto.setScore(plant.getScore());
+        dto.setLatitude(plant.getLocation().getLatitude());
+        dto.setLongitude(plant.getLocation().getLongitude());
+
+        dto.setWeather(mapWeather(plant.getLocation()));
+        dto.setOptimal(mapOptimal(plant.getOptimalConditions()));
+        dto.setSensor(mapSensor(plant.getId())); // optional
+
+        return dto;
+    }
+
+    private WeatherDTO mapWeather(Location location) {
+        if (location == null || location.getWeatherHistory().isEmpty()) return null;
+
+        WeatherData latest = location.getWeatherHistory().stream()
+                .max(Comparator.comparing(WeatherData::getTimestamp))
+                .orElse(null);
+
+        if (latest == null) return null;
+
+        WeatherDTO dto = new WeatherDTO();
+        dto.setTimestamp(latest.getTimestamp());
+        dto.setAirTemperature(latest.getTemperature());
+        dto.setAirHumidity(latest.getHumidity());
+        dto.setWind(latest.getWindSpeed());
+        dto.setPrecipitation(latest.getPrecipitation());
+        dto.setUvIndex(latest.getUvIndex());
+        dto.setCloudCover(latest.getCloudCover());
+        dto.setEvapotranspiration(latest.getEvapotranspiration());
+        return dto;
+    }
+
+    private OptimalDTO mapOptimal(OptimalConditions optimal) {
+        if (optimal == null) return null;
+
+        OptimalDTO dto = new OptimalDTO();
+        dto.setPlantName(optimal.getPlantName());
+        dto.setIdealTemperature(optimal.getIdealTemperature());
+        dto.setIdealHumidity(optimal.getIdealHumidity());
+        dto.setIdealRainfall(optimal.getIdealRainfall());
+        dto.setSoilType(optimal.getSoilType());
+        dto.setSunlightExposure(optimal.getSunlightExposure());
+        return dto;
+    }
+
+    private SensorDTO mapSensor(Long plantId) {
+        // TODO: Replace with actual sensor integration
+        return null;
     }
 
 }

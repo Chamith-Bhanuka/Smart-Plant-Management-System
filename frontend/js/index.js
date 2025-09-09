@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleLearningClick() {
-        console.log("Learning clicked!");
+        checkAuthAndRedirect('learn');
     }
 
     function handleAnalyticsClick() {

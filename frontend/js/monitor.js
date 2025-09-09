@@ -113,8 +113,10 @@ async function loadMonitorData() {
         if (!res.ok) throw new Error('Failed to load monitor data');
         monitorCache = await res.json();
 
+        const lastMonitor = monitorCache[monitorCache.length - 1];
+
         if (monitorCache.length > 0) {
-            renderPlantMonitor(monitorCache[0]);
+            renderPlantMonitor(lastMonitor);
         } else {
             console.warn('No plants found for this user.');
             clearMonitorUI();
@@ -140,7 +142,48 @@ function clearMonitorUI() {
 }
 
 // Render a single plant into the existing DOM
-function renderPlantMonitor(plant) {
+// function renderPlantMonitor(plant) {
+//     // Title and meta
+//     const sci = plant.scientificName || 'Plant';
+//     const common = plant.commonName ? ` (${plant.commonName})` : '';
+//     document.getElementById('plant-title-heading').textContent = `${sci}${common}`;
+//     document.getElementById('plant-zone').textContent =
+//         `${sci} - (${plant.latitude?.toFixed?.(4) || '?'}, ${plant.longitude?.toFixed?.(4) || '?'})`;
+//
+//     //Set plant image
+//     const filename = plant.imagePath?.split('/').pop(); // Extract just the filename
+//     if (filename) {
+//         document.getElementById('plant-image').src = `http://localhost:8080/uploads/${filename}`;
+//         console.log('Plant image loaded.');
+//         console.log('File name: ', filename);
+//     } else {
+//         document.getElementById('plant-image').src = 'default-image.jpg'; // fallback if missing
+//         console.log('Plant image missing.');
+//     }
+//
+//     // Right sidebar: Weather details (from DB latest)
+//     const w = plant.weather || {};
+//     setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
+//     setDetailValue('precipitation-detail', w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--');
+//     setDetailValue('uv_index-detail', w.uvIndex != null ? `${formatNumber(w.uvIndex)}` : '--');
+//     setDetailValue('cloud_cover-detail', w.cloudCover != null ? `${formatNumber(w.cloudCover)}%` : '--');
+//     setDetailValue('evapotranspiration-detail', w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--');
+//     setDetailValue('pressure-detail', w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--');
+//
+//     // Left metrics: Air temp & humidity from weather (DB)
+//     setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
+//     setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
+//
+//     // Sensors handled separately; if present, render them
+//     const s = plant.sensor || {};
+//     setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
+//     setMetricValue('light_intensity-metric', s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--');
+//
+//     // Build modal comparison map dynamically
+//     buildOptimalConditionsMap(plant);
+// }
+
+async function renderPlantMonitor(plant) {
     // Title and meta
     const sci = plant.scientificName || 'Plant';
     const common = plant.commonName ? ` (${plant.commonName})` : '';
@@ -148,15 +191,45 @@ function renderPlantMonitor(plant) {
     document.getElementById('plant-zone').textContent =
         `${sci} - (${plant.latitude?.toFixed?.(4) || '?'}, ${plant.longitude?.toFixed?.(4) || '?'})`;
 
-    //Set plant image
-    const filename = plant.imagePath?.split('/').pop(); // Extract just the filename
-    if (filename) {
-        document.getElementById('plant-image').src = `http://localhost:8080/uploads/${filename}`;
-    } else {
-        document.getElementById('plant-image').src = 'default-image.jpg'; // fallback if missing
+    // ✅ Set plant image
+    try {
+        const refreshResponse = await fetch('http://localhost:8080/auth/refresh', {
+            method: 'POST',
+            credentials: 'include' // sends the refreshToken cookie
+        });
+
+        if (!refreshResponse.ok) {
+            throw new Error("Refresh failed");
+        }
+
+        const refreshData = await refreshResponse.json();
+        const newAccessToken = refreshData.accessToken;
+
+
+        const res = await fetch("http://localhost:8080/uploads/last", {
+            withCredentials: true, // important if you’re using cookie auth
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${newAccessToken}`
+            },
+            credentials: 'include'
+        });
+
+        if (res.ok) {
+            const blob = await res.blob();
+            const imgUrl = URL.createObjectURL(blob);
+            document.getElementById("plant-image").src = imgUrl;
+            console.log("Plant image loaded from /uploads/last");
+        } else {
+            document.getElementById("plant-image").src = "default-image.jpg";
+            console.warn("No last image found, using fallback.");
+        }
+    } catch (e) {
+        document.getElementById("plant-image").src = "default-image.jpg";
+        console.error("Error loading last plant image:", e);
     }
 
-    // Right sidebar: Weather details (from DB latest)
+    // Weather details (from DB latest)
     const w = plant.weather || {};
     setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
     setDetailValue('precipitation-detail', w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--');
@@ -169,12 +242,12 @@ function renderPlantMonitor(plant) {
     setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
     setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
 
-    // Sensors handled separately; if present, render them
+    // Sensors handled separately
     const s = plant.sensor || {};
     setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
     setMetricValue('light_intensity-metric', s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--');
 
-    // Build modal comparison map dynamically
+    // Optimal condition map
     buildOptimalConditionsMap(plant);
 }
 

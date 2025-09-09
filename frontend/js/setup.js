@@ -25,6 +25,7 @@ async function submitPlantSetup(formData) {
 
         const response = await fetch('http://localhost:8080/plants/setup', {
             method: 'POST',
+            withCredentials: true,
             headers: {
                 'Authorization': `Bearer ${accessToken}`
             },
@@ -44,6 +45,10 @@ function buildFormData(formData) {
     fd.append('latitude', parseFloat(formData.location.split(',')[0]));
     fd.append('longitude', parseFloat(formData.location.split(',')[1]));
     fd.append('environment', formData.environment);
+    console.log('Image: ', formData.plantImageFile);
+    console.log('latitude: ', formData.latitude);
+    console.log('longitude: ', formData.longitude);
+    console.log('environment: ', formData.environment);
     return fd;
 }
 
@@ -180,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 nextBtn.disabled = false;
             }, 2000);
 
-            window.location.href = 'http://localhost:63343/frontend/monitor.html';
+            // window.location.href = 'http://localhost:63343/frontend/monitor.html';
         }
     }
     function goToPrevStep() {
