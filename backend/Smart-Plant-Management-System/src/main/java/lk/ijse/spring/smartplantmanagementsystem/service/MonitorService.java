@@ -1,5 +1,6 @@
 package lk.ijse.spring.smartplantmanagementsystem.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lk.ijse.spring.smartplantmanagementsystem.dto.OptimalDTO;
 import lk.ijse.spring.smartplantmanagementsystem.dto.PlantMonitorDTO;
 import lk.ijse.spring.smartplantmanagementsystem.dto.SensorDTO;
@@ -11,13 +12,24 @@ import lk.ijse.spring.smartplantmanagementsystem.repository.PlantRepository;
 import lk.ijse.spring.smartplantmanagementsystem.repository.UserRepository;
 import lk.ijse.spring.smartplantmanagementsystem.repository.WeatherDataRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MonitorService {
+
+    @Value("${esp32.base.url}")
+    private String esp32BaseUrl;
+
+    @Value("${php.server.base.url}")
+    private String phpServerBaseUrl;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     private final UserRepository userRepository;
     private final PlantRepository plantRepository;
@@ -81,9 +93,37 @@ public class MonitorService {
         return dto;
     }
 
-    // Stub: replace with real sensor integration
     private SensorDTO fetchLatestSensorTelemetry(Long plantId) {
-        // Return null if you don’t have sensors yet
-        return null;
+
+        SensorDTO dto = new SensorDTO();
+
+        try {
+            // fetch dht data
+            JsonNode dht = restTemplate.getForObject(esp32BaseUrl + "/dht", JsonNode.class);
+            double temp = dht.path("temperature").asDouble();
+            double humidity = dht.path("humidity").asDouble();
+
+            // fetch soil moisture
+            JsonNode soil = restTemplate.getForObject(esp32BaseUrl + "/soil", JsonNode.class);
+            double soilMoisture = soil.path("percent").asDouble();
+
+            dto.setTimestamp(LocalDateTime.now());
+            dto.setAirTemperature(temp);
+            dto.setAirHumidity(humidity);
+            dto.setSoilMoisture(soilMoisture);
+            dto.setLightIntensity(700.7);
+
+            System.out.println("🌡️temp from monitor: " + temp);
+            System.out.println("🌧️humidity from monitor: " + humidity);
+            System.out.println("🌍soil from monitor: " + soil);
+
+            return dto;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch sensor data", e);
+        } finally {
+            System.out.println("esp32 base url: " + esp32BaseUrl);
+            System.out.println("php server url: " + phpServerBaseUrl);
+        }
     }
 }
