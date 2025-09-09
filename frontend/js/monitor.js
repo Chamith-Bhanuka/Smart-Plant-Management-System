@@ -243,6 +243,7 @@ function clearMonitorUI() {
 // ----------------- Render plant monitor (snapshot DTO) -----------------
 function renderPlantMonitor(plant) {
     if (!plant) return;
+    console.log(plant)
     const sci = plant.scientificName || 'Plant';
     const common = plant.commonName ? ` (${plant.commonName})` : '';
     const titleEl = document.getElementById('plant-title-heading');
@@ -272,6 +273,7 @@ function renderPlantMonitor(plant) {
 
     // Weather & sensors
     const w = plant.weather || {};
+    console.log(plant.weather);
     setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
     setDetailValue('precipitation-detail', w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--');
     setDetailValue('uv_index-detail', w.uvIndex != null ? `${formatNumber(w.uvIndex)}` : '--');
@@ -279,12 +281,16 @@ function renderPlantMonitor(plant) {
     setDetailValue('evapotranspiration-detail', w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--');
     setDetailValue('pressure-detail', w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--');
 
-    setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
-    setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
+    // setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
+    // setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
 
     const s = plant.sensor || {};
+    console.log(plant.sensor);
     setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
     setMetricValue('light_intensity-metric', s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--');
+
+    setMetricValue('temperature-metric', s.airTemperature != null ? `${formatNumber(s.airTemperature)}°C` : '--');
+    setMetricValue('humidity-metric', s.airHumidity != null ? `${formatNumber(s.airHumidity)}%` : '--');
 
     // Build optimal conditions map for comparison modal
     buildOptimalConditionsMap(plant);

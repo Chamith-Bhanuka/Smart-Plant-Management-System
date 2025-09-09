@@ -34,4 +34,11 @@ public class Plant {
     @ManyToOne
     @JoinColumn(name = "optimal_conditions_id")
     private OptimalConditions optimalConditions;
+
+    @PrePersist
+    protected void onCreate() {
+        if (plantedDate == null) {
+            plantedDate = LocalDate.now();
+        }
+    }
 }
