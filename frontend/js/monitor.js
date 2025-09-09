@@ -1,124 +1,221 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const darkBtn = document.getElementById('dark-btn');
-    const lightBtn = document.getElementById('light-btn');
-    const globalSearch = document.getElementById('global-search');
+// ----------------- App state -----------------
+let accessToken = null;          // in-memory access token only
+let selectedPlantId = null;     // currently selected plant (for refresh / snapshot)
+let monitorCache = [];          // optional cached list of monitored plants (if used)
+let optimalConditionsMap = {};  // used by comparison modal
 
-    let currentTheme = 'dark';
-    try {
-        currentTheme = localStorage.getItem('theme') || 'dark';
-    } catch (e) {
-        currentTheme = 'dark';
-    }
-
-    setTheme(currentTheme);
-    darkBtn.addEventListener('click', () => setTheme('dark'));
-    lightBtn.addEventListener('click', () => setTheme('light'));
-
-    // Global search across monitored plants
-    globalSearch.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            performGlobalSearch();
-        }
-    });
-
-    // Modal close on backdrop click
-    document.getElementById('comparisonModal').addEventListener('click', (e) => {
-        if (e.target.id === 'comparisonModal') closeComparison();
-    });
-
-    // ESC closes modal
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeComparison();
-    });
-
-    // Add simple spin animation (used by Refresh)
-    const styleSheet = document.createElement('style');
-    styleSheet.innerText = '@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }';
-    document.head.appendChild(styleSheet);
-
-    animateCards();
-    loadMonitorData(); // fetch backend data on load
-});
-
-// ===== Theme =====
-function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.getElementById('dark-btn').classList.toggle('active', theme === 'dark');
-    document.getElementById('light-btn').classList.toggle('active', theme === 'light');
-    try {
-        localStorage.setItem('theme', theme);
-    } catch (e) {
-        console.log('Theme preference could not be saved');
-    }
+// ----------------- Utilities -----------------
+function formatNumber(n) {
+    if (n == null || Number.isNaN(n)) return '--';
+    const x = Number(n);
+    return Number.isInteger(x) ? x : x.toFixed(1);
 }
 
-// ===== Global search (monitored plants) =====
-let monitorCache = []; // array of PlantMonitorDTO
-function performGlobalSearch() {
-    const searchTerm = document.getElementById('global-search').value.toLowerCase().trim();
-    if (!searchTerm) return;
-
-    const plant = monitorCache.find((p) =>
-        (p.scientificName && p.scientificName.toLowerCase().includes(searchTerm)) ||
-        (p.commonName && p.commonName.toLowerCase().includes(searchTerm))
-    );
-
-    if (plant) {
-        renderPlantMonitor(plant);
-        document.querySelector('.main-panel').scrollIntoView({ behavior: 'smooth' });
-    } else {
-        alert('Plant not found in your monitored list.');
-    }
+function setDetailValue(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const valueEl = el.querySelector('.detail-value');
+    if (valueEl) valueEl.textContent = text ?? '--';
+}
+function setMetricValue(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const valueEl = el.querySelector('.metric-value');
+    if (valueEl) valueEl.textContent = text ?? '--';
 }
 
-// Keep token only in memory
-let accessToken = null;
-
-// Always refresh before a protected call
+// ----------------- Token management -----------------
 async function ensureAccessToken() {
+    // Try to refresh using cookie-based refresh token
     try {
         const res = await fetch('http://localhost:8080/auth/refresh', {
             method: 'POST',
-            credentials: 'include', // important for cookie-based refresh
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' }
         });
 
-        if (!res.ok) throw new Error("Failed to refresh token");
-
+        if (!res.ok) {
+            throw new Error('refresh failed');
+        }
         const data = await res.json();
         accessToken = data.accessToken;
-        console.log("♻️ Got new token:", accessToken);
-    } catch (e) {
-        console.warn("❌ Refresh failed. Redirecting to login...");
+        // console.log('♻️ Refreshed token (in-memory)');
+        return accessToken;
+    } catch (err) {
+        // If refresh fails, redirect to login
+        console.warn('Token refresh failed, redirecting to login.', err);
+        // update this URL to your actual auth page if different
         window.location.href = 'http://localhost:63343/frontend/auth.html';
+        throw err;
     }
 }
 
-// Generic helper for GET/POST with current token
+// Generic fetch wrapper that ensures token and sets Authorization header
 async function apiFetch(url, options = {}) {
     await ensureAccessToken();
     return fetch(url, {
         ...options,
+        credentials: 'include', // always include cookies for refresh flow if needed
         headers: {
             ...(options.headers || {}),
-            'Authorization': `Bearer ${accessToken}`
+            'Authorization': `Bearer ${accessToken}`,
+            ...(options.headers && options.headers['Content-Type'] ? {} : { 'Content-Type': 'application/json' })
         }
     });
 }
 
-// ===== Data loading & rendering =====
+// ----------------- Theme & Entrance animation -----------------
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const darkBtn = document.getElementById('dark-btn');
+    const lightBtn = document.getElementById('light-btn');
+    if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
+    if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
+    try {
+        localStorage.setItem('theme', theme);
+    } catch (e) {
+        console.warn('Could not save theme preference');
+    }
+}
+
+function animateCards() {
+    document.querySelectorAll('.card').forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = 'all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)';
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 80);
+    });
+}
+
+// add simple spin animation CSS
+(function addSpinKeyframes() {
+    const styleSheet = document.createElement('style');
+    styleSheet.innerText = '@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }';
+    document.head.appendChild(styleSheet);
+})();
+
+// ----------------- Search (debounced) & results rendering -----------------
+const plantSearch = document.getElementById('plant-search');
+const resultsBox = document.getElementById('search-results');
+
+let searchTimer = null;
+if (plantSearch) {
+    plantSearch.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        const q = plantSearch.value.trim();
+        if (!q) {
+            resultsBox && resultsBox.classList.remove('open');
+            if (resultsBox) resultsBox.innerHTML = '';
+            return;
+        }
+        searchTimer = setTimeout(() => doSearch(q), 250);
+    });
+}
+
+async function doSearch(q) {
+    try {
+        const res = await apiFetch(`http://localhost:8080/plants/search?q=${encodeURIComponent(q)}`, { method: 'GET' });
+        if (!res.ok) {
+            console.error('Search request failed:', res.status);
+            resultsBox && (resultsBox.innerHTML = `<div class="search-item" style="grid-template-columns:1fr"><span>Search failed</span></div>`);
+            resultsBox && resultsBox.classList.add('open');
+            return;
+        }
+        const list = await res.json();
+        renderSearchResults(list);
+    } catch (e) {
+        console.error('search error', e);
+        resultsBox && (resultsBox.innerHTML = `<div class="search-item" style="grid-template-columns:1fr"><span>Error</span></div>`);
+        resultsBox && resultsBox.classList.add('open');
+    }
+}
+
+function renderSearchResults(list) {
+    if (!resultsBox) return;
+    if (!list || list.length === 0) {
+        resultsBox.innerHTML = `<div class="search-item" style="grid-template-columns:1fr"><span>No results</span></div>`;
+        resultsBox.classList.add('open');
+        return;
+    }
+    resultsBox.innerHTML = list.map(p => {
+        const filename = p.imagePath ? p.imagePath.split('/').pop() : null;
+        const imgUrl = filename ? `http://localhost:8080/uploads/${filename}` : 'https://placehold.co/48x48';
+        console.log('Image URL', imgUrl);
+        const meta = [
+            p.plantedDate ? `Planted: ${p.plantedDate}` : null,
+            (p.latitude != null && p.longitude != null) ? `Loc: ${Number(p.latitude).toFixed(4)}, ${Number(p.longitude).toFixed(4)}` : null
+        ].filter(Boolean).join(' • ');
+        const right = [];
+        if (p.daysToHarvest != null) right.push(`${p.daysToHarvest} days to harvest`);
+        if (p.yieldPredictionKg != null) right.push(`${p.yieldPredictionKg} kg`);
+        return `
+      <div class="search-item" data-id="${p.plantId}">
+        <img class="search-thumb" src="${imgUrl}" alt="thumb">
+        <div>
+          <div><strong>${p.scientificName || 'Plant'}</strong>${p.commonName ? ` (${p.commonName})` : ''}</div>
+          <div class="search-meta">${meta}</div>
+        </div>
+        <div class="search-badge">${right.join(' • ')}</div>
+      </div>`;
+    }).join('');
+    resultsBox.classList.add('open');
+}
+
+// click handler for search results (delegation)
+if (resultsBox) {
+    resultsBox.addEventListener('click', async (e) => {
+        const item = e.target.closest('.search-item');
+        if (!item) return;
+        selectedPlantId = Number(item.dataset.id);
+        plantSearch.value = '';
+        resultsBox.classList.remove('open');
+        // Request a live snapshot (POST) which the backend persists and returns snapshot DTO
+        await loadSnapshot(selectedPlantId);
+    });
+}
+
+// close results when clicking outside
+document.addEventListener('click', (e) => {
+    if (!resultsBox) return;
+    if (!resultsBox.contains(e.target) && e.target !== plantSearch) {
+        resultsBox.classList.remove('open');
+    }
+});
+
+// ----------------- Snapshot capture & main data load -----------------
+async function loadSnapshot(plantId) {
+    try {
+        const res = await apiFetch(`http://localhost:8080/plants/${plantId}/snapshot`, { method: 'POST' , withCredentials: true,});
+        if (!res.ok) {
+            console.error('Snapshot request failed', res.status);
+            return;
+        }
+        const data = await res.json();
+        // Render the returned snapshot DTO
+        renderPlantMonitor(data);
+    } catch (e) {
+        console.error('snapshot error', e);
+    }
+}
+
+// Optionally load list of monitored plants on page load (if you maintain such endpoint)
 async function loadMonitorData() {
     try {
         const res = await apiFetch('http://localhost:8080/plants/monitor', { method: 'GET' });
-        if (!res.ok) throw new Error('Failed to load monitor data');
+        if (!res.ok) {
+            console.warn('No monitor list available or failed to fetch list.');
+            return;
+        }
         monitorCache = await res.json();
-
-        const lastMonitor = monitorCache[monitorCache.length - 1];
-
         if (monitorCache.length > 0) {
+            // render the most recent monitor (or choose first)
+            const lastMonitor = monitorCache[monitorCache.length - 1];
+            selectedPlantId = lastMonitor.plantId ?? selectedPlantId;
             renderPlantMonitor(lastMonitor);
         } else {
-            console.warn('No plants found for this user.');
             clearMonitorUI();
         }
     } catch (err) {
@@ -127,8 +224,10 @@ async function loadMonitorData() {
 }
 
 function clearMonitorUI() {
-    document.getElementById('plant-title-heading').textContent = 'Plant Health Analysis';
-    document.getElementById('plant-zone').textContent = 'No plant selected';
+    const title = document.getElementById('plant-title-heading');
+    if (title) title.textContent = 'Plant Health Analysis';
+    const zone = document.getElementById('plant-zone');
+    if (zone) zone.textContent = 'No plant selected';
     setMetricValue('temperature-metric', '--');
     setMetricValue('humidity-metric', '--');
     setMetricValue('soil_moisture-metric', '--');
@@ -141,95 +240,37 @@ function clearMonitorUI() {
     setDetailValue('pressure-detail', '--');
 }
 
-// Render a single plant into the existing DOM
-// function renderPlantMonitor(plant) {
-//     // Title and meta
-//     const sci = plant.scientificName || 'Plant';
-//     const common = plant.commonName ? ` (${plant.commonName})` : '';
-//     document.getElementById('plant-title-heading').textContent = `${sci}${common}`;
-//     document.getElementById('plant-zone').textContent =
-//         `${sci} - (${plant.latitude?.toFixed?.(4) || '?'}, ${plant.longitude?.toFixed?.(4) || '?'})`;
-//
-//     //Set plant image
-//     const filename = plant.imagePath?.split('/').pop(); // Extract just the filename
-//     if (filename) {
-//         document.getElementById('plant-image').src = `http://localhost:8080/uploads/${filename}`;
-//         console.log('Plant image loaded.');
-//         console.log('File name: ', filename);
-//     } else {
-//         document.getElementById('plant-image').src = 'default-image.jpg'; // fallback if missing
-//         console.log('Plant image missing.');
-//     }
-//
-//     // Right sidebar: Weather details (from DB latest)
-//     const w = plant.weather || {};
-//     setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
-//     setDetailValue('precipitation-detail', w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--');
-//     setDetailValue('uv_index-detail', w.uvIndex != null ? `${formatNumber(w.uvIndex)}` : '--');
-//     setDetailValue('cloud_cover-detail', w.cloudCover != null ? `${formatNumber(w.cloudCover)}%` : '--');
-//     setDetailValue('evapotranspiration-detail', w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--');
-//     setDetailValue('pressure-detail', w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--');
-//
-//     // Left metrics: Air temp & humidity from weather (DB)
-//     setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
-//     setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
-//
-//     // Sensors handled separately; if present, render them
-//     const s = plant.sensor || {};
-//     setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
-//     setMetricValue('light_intensity-metric', s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--');
-//
-//     // Build modal comparison map dynamically
-//     buildOptimalConditionsMap(plant);
-// }
-
-async function renderPlantMonitor(plant) {
-    // Title and meta
+// ----------------- Render plant monitor (snapshot DTO) -----------------
+function renderPlantMonitor(plant) {
+    if (!plant) return;
     const sci = plant.scientificName || 'Plant';
     const common = plant.commonName ? ` (${plant.commonName})` : '';
-    document.getElementById('plant-title-heading').textContent = `${sci}${common}`;
-    document.getElementById('plant-zone').textContent =
-        `${sci} - (${plant.latitude?.toFixed?.(4) || '?'}, ${plant.longitude?.toFixed?.(4) || '?'})`;
+    const titleEl = document.getElementById('plant-title-heading');
+    if (titleEl) titleEl.textContent = `${sci}${common}`;
+    const zoneEl = document.getElementById('plant-zone');
+    if (zoneEl) zoneEl.textContent = `${sci} • (${plant.latitude?.toFixed?.(4) || '?'}, ${plant.longitude?.toFixed?.(4) || '?'})`;
 
-    // ✅ Set plant image
-    try {
-        const refreshResponse = await fetch('http://localhost:8080/auth/refresh', {
-            method: 'POST',
-            credentials: 'include' // sends the refreshToken cookie
-        });
-
-        if (!refreshResponse.ok) {
-            throw new Error("Refresh failed");
-        }
-
-        const refreshData = await refreshResponse.json();
-        const newAccessToken = refreshData.accessToken;
-
-
-        const res = await fetch("http://localhost:8080/uploads/last", {
-            withCredentials: true, // important if you’re using cookie auth
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${newAccessToken}`
-            },
-            credentials: 'include'
-        });
-
-        if (res.ok) {
-            const blob = await res.blob();
-            const imgUrl = URL.createObjectURL(blob);
-            document.getElementById("plant-image").src = imgUrl;
-            console.log("Plant image loaded from /uploads/last");
-        } else {
-            document.getElementById("plant-image").src = "default-image.jpg";
-            console.warn("No last image found, using fallback.");
-        }
-    } catch (e) {
-        document.getElementById("plant-image").src = "default-image.jpg";
-        console.error("Error loading last plant image:", e);
+    const filename = plant.imagePath?.split('/').pop();
+    if (filename) {
+        const imgEl = document.getElementById('plant-image');
+        if (imgEl) imgEl.src = `http://localhost:8080/uploads/${filename}`;
     }
 
-    // Weather details (from DB latest)
+    // Optional stat cells with predictable IDs
+    if (plant.plantedDate) {
+        const statAge = document.getElementById('stat-age');
+        if (statAge) statAge.textContent = computePlantAge(plant.plantedDate);
+    }
+    if (plant.optimal?.daysToHarvest != null) {
+        const sh = document.getElementById('stat-harvest');
+        if (sh) sh.textContent = `${plant.optimal.daysToHarvest} days`;
+    }
+    if (plant.optimal?.yieldPredictionKg != null) {
+        const sy = document.getElementById('stat-yield');
+        if (sy) sy.textContent = `${plant.optimal.yieldPredictionKg} kg`;
+    }
+
+    // Weather & sensors
     const w = plant.weather || {};
     setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
     setDetailValue('precipitation-detail', w.precipitation != null ? `${formatNumber(w.precipitation)} mm` : '--');
@@ -238,47 +279,52 @@ async function renderPlantMonitor(plant) {
     setDetailValue('evapotranspiration-detail', w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--');
     setDetailValue('pressure-detail', w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--');
 
-    // Left metrics: Air temp & humidity from weather (DB)
     setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
     setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
 
-    // Sensors handled separately
     const s = plant.sensor || {};
     setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
     setMetricValue('light_intensity-metric', s.lightIntensity != null ? `${formatNumber(s.lightIntensity)} lux` : '--');
 
-    // Optimal condition map
+    // Build optimal conditions map for comparison modal
     buildOptimalConditionsMap(plant);
 }
 
-// ===== Helpers to set UI text =====
-function setDetailValue(id, text) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const valueEl = el.querySelector('.detail-value');
-    if (valueEl) valueEl.textContent = text ?? '--';
+// compute plant age in days
+function computePlantAge(plantedDateStr) {
+    const start = new Date(plantedDateStr);
+    const now = new Date();
+    if (isNaN(start.getTime())) return '--';
+    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    return `${diffDays} days`;
 }
 
-function setMetricValue(id, text) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const valueEl = el.querySelector('.metric-value');
-    if (valueEl) valueEl.textContent = text ?? '--';
-}
-
-function formatNumber(n) {
-    if (n == null || Number.isNaN(n)) return '--';
-    const x = Number(n);
-    return Number.isInteger(x) ? x : x.toFixed(1);
-}
-
-// ===== Optimal conditions map for modal (built from DB data) =====
-let optimalConditionsMap = {};
-
+// ----------------- Optimal conditions map & helpers -----------------
 function buildOptimalConditionsMap(plant) {
     const opt = plant.optimal || {};
     const w = plant.weather || {};
     const s = plant.sensor || {};
+
+    function rangeOrValue(center, unit) {
+        if (center == null) return '--';
+        const delta = unit === '%' ? 5 : 2;
+        const low = (Number(center) - delta).toFixed(0);
+        const high = (Number(center) + delta).toFixed(0);
+        return `${low}-${high} ${unit}`;
+    }
+    function statusFor(current, target, tol) {
+        if (current == null || target == null) return 'warning';
+        const diff = Math.abs(Number(current) - Number(target));
+        if (diff <= tol) return 'good';
+        if (diff <= tol * 2) return 'warning';
+        return 'critical';
+    }
+    function qualitative(value, low, high) {
+        if (value == null) return 'warning';
+        const v = Number(value);
+        if (v < low || v > high) return 'warning';
+        return 'good';
+    }
 
     optimalConditionsMap = {
         temperature: {
@@ -294,9 +340,9 @@ function buildOptimalConditionsMap(plant) {
             description: `Aim for relative humidity near ${formatNumber(opt.idealHumidity)}%.`
         },
         soil_moisture: {
-            optimal: '50-70%', // rule-of-thumb; add field later if you want DB-driven values
+            optimal: opt.idealSoilMoisture ? rangeOrValue(opt.idealSoilMoisture, '%') : '50-70%',
             current: s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--',
-            status: qualitative(s.soilMoisture, 50, 70),
+            status: qualitative(s.soilMoisture, opt.idealSoilMoisture ? opt.idealSoilMoisture - 10 : 50, opt.idealSoilMoisture ? opt.idealSoilMoisture + 10 : 70),
             description: 'Keep soil moisture in optimal range; irrigate if below.'
         },
         light_intensity: {
@@ -344,32 +390,7 @@ function buildOptimalConditionsMap(plant) {
     };
 }
 
-// Range/value helpers for modal
-function rangeOrValue(center, unit) {
-    if (center == null) return '--';
-    // Show a friendly ± band for display; adjust as needed
-    const delta = unit === '%' ? 5 : 2;
-    const low = (Number(center) - delta).toFixed(0);
-    const high = (Number(center) + delta).toFixed(0);
-    return `${low}-${high} ${unit}`;
-}
-
-function statusFor(current, target, tol) {
-    if (current == null || target == null) return 'warning';
-    const diff = Math.abs(Number(current) - Number(target));
-    if (diff <= tol) return 'good';
-    if (diff <= tol * 2) return 'warning';
-    return 'critical';
-}
-
-function qualitative(value, low, high) {
-    if (value == null) return 'warning';
-    const v = Number(value);
-    if (v < low || v > high) return 'warning';
-    return 'good';
-}
-
-// ===== Comparison modal (dynamic) =====
+// ----------------- Comparison modal -----------------
 function showComparison(type) {
     const modal = document.getElementById('comparisonModal');
     const titleEl = document.getElementById('modalTitle');
@@ -383,7 +404,7 @@ function showComparison(type) {
     }
 
     const labelEl = element.querySelector('.metric-label, .detail-label');
-    titleEl.textContent = `${labelEl.textContent} Analysis`;
+    titleEl && (titleEl.textContent = `${labelEl ? labelEl.textContent : type} Analysis`);
 
     const statusClass = data.status === 'good' ? 'status-optimal' : data.status === 'warning' ? 'status-warning' : 'status-critical';
     const statusText = data.status === 'good' ? 'Optimal' : data.status === 'warning' ? 'Warning' : 'Critical';
@@ -403,19 +424,31 @@ function showComparison(type) {
       <p class="comparison-description">${data.description}</p>
     </div>
   `;
-    modal.classList.add('visible');
+    modal && modal.classList.add('visible');
 }
 
 function closeComparison() {
-    document.getElementById('comparisonModal').classList.remove('visible');
+    const modal = document.getElementById('comparisonModal');
+    modal && modal.classList.remove('visible');
 }
 
-// ===== Health toggle (kept from your UI) =====
+// modal close handlers
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('comparisonModal');
+    if (!modal) return;
+    if (e.target === modal) closeComparison();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeComparison();
+});
+
+// ----------------- Health toggle -----------------
 let isDiseaseMode = false;
 function toggleHealthMode() {
     const healthContent = document.getElementById('healthContent');
     const healthScore = document.getElementById('healthScore');
     isDiseaseMode = !isDiseaseMode;
+    if (!healthScore || !healthContent) return;
     if (isDiseaseMode) {
         healthScore.className = 'health-score-badge score-critical';
         healthScore.innerHTML = `45 <span>Health</span>`;
@@ -434,36 +467,76 @@ function toggleHealthMode() {
     }
 }
 
-// ===== Refresh button: re-pull from backend =====
+// ----------------- Refresh button -----------------
 async function refreshData() {
     const refreshBtn = document.getElementById('refreshBtn');
-    const refreshIcon = refreshBtn.querySelector('.fa-sync-alt');
-    refreshBtn.disabled = true;
-    refreshIcon.style.animation = 'spin 1s linear infinite';
+    const refreshIcon = refreshBtn ? refreshBtn.querySelector('.fa-sync-alt') : null;
+    if (refreshBtn) refreshBtn.disabled = true;
+    if (refreshIcon) refreshIcon.style.animation = 'spin 1s linear infinite';
     try {
-        await loadMonitorData();
+        if (selectedPlantId) {
+            await loadSnapshot(selectedPlantId);
+        } else {
+            console.warn('Select a plant to refresh its live data.');
+            // Optionally load monitor data as fallback:
+            await loadMonitorData();
+        }
     } finally {
         setTimeout(() => {
-            refreshBtn.disabled = false;
-            refreshIcon.style.animation = '';
+            if (refreshBtn) refreshBtn.disabled = false;
+            if (refreshIcon) refreshIcon.style.animation = '';
         }, 500);
     }
 }
 
-// ===== Settings stub (kept) =====
+// ----------------- Settings stub -----------------
 function showSettings() {
     alert('⚙️ Settings Panel Opened');
 }
 
-// ===== Entrance animation (kept) =====
-function animateCards() {
-    document.querySelectorAll('.card').forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(30px)';
-        card.style.transition = 'all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)';
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 80);
-    });
-}
+// ----------------- Startup -----------------
+document.addEventListener('DOMContentLoaded', async () => {
+    // Theme init
+    let currentTheme = 'dark';
+    try { currentTheme = localStorage.getItem('theme') || 'dark'; } catch (e) { currentTheme = 'dark'; }
+    setTheme(currentTheme);
+    const darkBtn = document.getElementById('dark-btn');
+    const lightBtn = document.getElementById('light-btn');
+    if (darkBtn) darkBtn.addEventListener('click', () => setTheme('dark'));
+    if (lightBtn) lightBtn.addEventListener('click', () => setTheme('light'));
+
+    // wire global search Enter (if you also have an Enter-based global search input)
+    const globalSearch = document.getElementById('global-search');
+    if (globalSearch) {
+        globalSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const term = globalSearch.value.trim().toLowerCase();
+                if (!term) return;
+                // If monitorCache is populated, search local; otherwise try server search
+                const found = monitorCache.find((p) =>
+                    (p.scientificName && p.scientificName.toLowerCase().includes(term)) ||
+                    (p.commonName && p.commonName.toLowerCase().includes(term))
+                );
+                if (found) {
+                    selectedPlantId = found.plantId;
+                    renderPlantMonitor(found);
+                    document.querySelector('.main-panel')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    // fallback: perform server search -> pick first
+                    doSearch(term).catch(() => alert('Plant not found'));
+                }
+            }
+        });
+    }
+
+    // Add entrance animation
+    animateCards();
+
+    // Load monitor data once on start (will call refresh to get token)
+    try {
+        await ensureAccessToken();
+        await loadMonitorData();
+    } catch (e) {
+        console.warn('Startup token/monitor load may have failed. User likely redirected to login.');
+    }
+});
