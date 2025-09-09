@@ -26,6 +26,9 @@ public class OptimalConditions {
     private String soilType;
     private String sunlightExposure;
 
+    private Integer daysToHarvest;
+    private Double yieldPredictionKg;
+
     @OneToMany(mappedBy = "optimalConditions")
     private List<Plant> plants;
 }

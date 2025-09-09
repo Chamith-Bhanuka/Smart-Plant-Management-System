@@ -26,6 +26,7 @@ public class WeatherData {
     private Double cloudCover; // %
     private Double uvIndex;
     private Double evapotranspiration; // mm
+    private Double pressure;
 
     @ManyToOne
     @JoinColumn(name = "location_id")

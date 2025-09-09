@@ -10,4 +10,6 @@ public class OptimalDTO {
     private Double idealRainfall;
     private String soilType;
     private String sunlightExposure;
+    private Integer daysToHarvest;
+    private Double yieldPredictionKg;
 }

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -18,6 +20,8 @@ public class Plant {
     private String commonName;
     private Double score;
     private String imagePath;
+
+    private LocalDate plantedDate;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

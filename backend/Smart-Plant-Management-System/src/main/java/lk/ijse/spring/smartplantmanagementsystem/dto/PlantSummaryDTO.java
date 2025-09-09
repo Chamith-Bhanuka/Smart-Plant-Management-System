@@ -1,24 +1,18 @@
 package lk.ijse.spring.smartplantmanagementsystem.dto;
 
-import lk.ijse.spring.smartplantmanagementsystem.entity.OptimalConditions;
 import lombok.Data;
 
 import java.time.LocalDate;
 
 @Data
-public class PlantMonitorDTO {
+public class PlantSummaryDTO {
     private Long plantId;
     private String scientificName;
     private String commonName;
     private String imagePath;
-    private Double Score;
-    private LocalDate plantedDate;
-
     private Double latitude;
     private Double longitude;
-
-    private WeatherDTO weather;
-    private OptimalDTO optimal;
-
-    private SensorDTO sensor;
+    private LocalDate plantedDate;      // new
+    private Integer daysToHarvest;      // from Optimal
+    private Double yieldPredictionKg;   // from Optimal
 }
