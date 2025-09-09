@@ -20,4 +20,6 @@ public interface PlantRepository extends JpaRepository<Plant, Long> {
             "(lower(p.scientificName) like lower(concat('%', :q, '%')) or " +
             " lower(p.commonName) like lower(concat('%', :q, '%')))")
     List<Plant> searchForUser(@Param("user") User user, @Param("q") String q);
+
+    List<Plant> findTop1ByUserOrderByIdDesc(User user);
 }

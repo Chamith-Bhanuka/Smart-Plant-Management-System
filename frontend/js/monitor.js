@@ -297,10 +297,24 @@ function renderPlantMonitor(plant) {
 }
 
 // compute plant age in days
+// function computePlantAge(plantedDateStr) {
+//     const start = new Date(plantedDateStr);
+//     const now = new Date();
+//     if (isNaN(start.getTime())) return '--';
+//     const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+//     return `${diffDays} days`;
+// }
+
 function computePlantAge(plantedDateStr) {
     const start = new Date(plantedDateStr);
     const now = new Date();
+
     if (isNaN(start.getTime())) return '--';
+
+    // Normalize both to midnight (ignore hours/minutes/seconds)
+    start.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+
     const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
     return `${diffDays} days`;
 }

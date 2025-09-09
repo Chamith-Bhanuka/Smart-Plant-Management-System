@@ -39,7 +39,8 @@ public class MonitorService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Plant> plants = plantRepository.findByUser(user);
+        //List<Plant> plants = plantRepository.findByUser(user);
+        List<Plant> plants = plantRepository.findTop1ByUserOrderByIdDesc(user);
 
         return plants.stream().map(this::toMonitorDTO).toList();
     }
@@ -51,6 +52,7 @@ public class MonitorService {
         dto.setCommonName(plant.getCommonName());
         dto.setImagePath(plant.getImagePath());
         dto.setScore(plant.getScore());
+        dto.setPlantedDate(plant.getPlantedDate());
 
         if (plant.getLocation() != null) {
             dto.setLatitude(plant.getLocation().getLatitude());
