@@ -1,10 +1,9 @@
-// ----------------- App state -----------------
-let accessToken = null;          // in-memory access token only
-let selectedPlantId = null;     // currently selected plant (for refresh / snapshot)
-let monitorCache = [];          // optional cached list of monitored plants (if used)
+let accessToken = null;
+let selectedPlantId = null;
+let monitorCache = [];
 let optimalConditionsMap = {};  // used by comparison modal
 
-// ----------------- Utilities -----------------
+//utilities
 function formatNumber(n) {
     if (n == null || Number.isNaN(n)) return '--';
     const x = Number(n);
@@ -24,9 +23,9 @@ function setMetricValue(id, text) {
     if (valueEl) valueEl.textContent = text ?? '--';
 }
 
-// ----------------- Token management -----------------
+// token manage
 async function ensureAccessToken() {
-    // Try to refresh using cookie-based refresh token
+
     try {
         const res = await fetch('http://localhost:8080/auth/refresh', {
             method: 'POST',
@@ -42,20 +41,20 @@ async function ensureAccessToken() {
         // console.log('♻️ Refreshed token (in-memory)');
         return accessToken;
     } catch (err) {
-        // If refresh fails, redirect to login
+
         console.warn('Token refresh failed, redirecting to login.', err);
-        // update this URL to your actual auth page if different
+
         window.location.href = 'http://localhost:63343/frontend/auth.html';
         throw err;
     }
 }
 
-// Generic fetch wrapper that ensures token and sets Authorization header
+// common method to refresh token + access
 async function apiFetch(url, options = {}) {
     await ensureAccessToken();
     return fetch(url, {
         ...options,
-        credentials: 'include', // always include cookies for refresh flow if needed
+        credentials: 'include',
         headers: {
             ...(options.headers || {}),
             'Authorization': `Bearer ${accessToken}`,
@@ -64,7 +63,7 @@ async function apiFetch(url, options = {}) {
     });
 }
 
-// ----------------- Theme & Entrance animation -----------------
+// theme
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     const darkBtn = document.getElementById('dark-btn');
@@ -97,7 +96,7 @@ function animateCards() {
     document.head.appendChild(styleSheet);
 })();
 
-// ----------------- Search (debounced) & results rendering -----------------
+// search
 const plantSearch = document.getElementById('plant-search');
 const resultsBox = document.getElementById('search-results');
 
@@ -164,7 +163,7 @@ function renderSearchResults(list) {
     resultsBox.classList.add('open');
 }
 
-// click handler for search results (delegation)
+// click handler for search results
 if (resultsBox) {
     resultsBox.addEventListener('click', async (e) => {
         const item = e.target.closest('.search-item');
@@ -185,8 +184,11 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// ----------------- Snapshot capture & main data load -----------------
+// Snapshot capture and main data load
 async function loadSnapshot(plantId) {
+    const spinner = document.getElementById('loading-spinner');
+    spinner.style.display = 'block'; // show spinner
+
     try {
         const res = await apiFetch(`http://localhost:8080/plants/${plantId}/snapshot`, { method: 'POST' , withCredentials: true,});
         if (!res.ok) {
@@ -198,11 +200,16 @@ async function loadSnapshot(plantId) {
         renderPlantMonitor(data);
     } catch (e) {
         console.error('snapshot error', e);
+    } finally {
+        spinner.style.display = 'none';
     }
 }
 
-// Optionally load list of monitored plants on page load (if you maintain such endpoint)
+// monitored plant list
 async function loadMonitorData() {
+    const spinner = document.getElementById('loading-spinner');
+    spinner.style.display = 'block';
+
     try {
         const res = await apiFetch('http://localhost:8080/plants/monitor', { method: 'GET' });
         if (!res.ok) {
@@ -220,6 +227,8 @@ async function loadMonitorData() {
         }
     } catch (err) {
         console.error('Monitor load error:', err);
+    } finally {
+        spinner.style.display = 'none';
     }
 }
 
@@ -240,7 +249,7 @@ function clearMonitorUI() {
     setDetailValue('pressure-detail', '--');
 }
 
-// ----------------- Render plant monitor (snapshot DTO) -----------------
+//render plant monitor
 function renderPlantMonitor(plant) {
     if (!plant) return;
     console.log(plant)
@@ -257,7 +266,6 @@ function renderPlantMonitor(plant) {
         if (imgEl) imgEl.src = `http://localhost:8080/uploads/${filename}`;
     }
 
-    // Optional stat cells with predictable IDs
     if (plant.plantedDate) {
         const statAge = document.getElementById('stat-age');
         if (statAge) statAge.textContent = computePlantAge(plant.plantedDate);
@@ -271,7 +279,7 @@ function renderPlantMonitor(plant) {
         if (sy) sy.textContent = `${plant.optimal.yieldPredictionKg} kg`;
     }
 
-    // Weather & sensors
+    // Weather and sensors
     const w = plant.weather || {};
     console.log(plant.weather);
     setDetailValue('wind_speed-detail', w.wind != null ? `${formatNumber(w.wind)} km/h` : '--');
@@ -281,9 +289,6 @@ function renderPlantMonitor(plant) {
     setDetailValue('evapotranspiration-detail', w.evapotranspiration != null ? `${formatNumber(w.evapotranspiration)} mm/day` : '--');
     setDetailValue('pressure-detail', w.pressure != null ? `${formatNumber(w.pressure)} hPa` : '--');
 
-    // setMetricValue('temperature-metric', w.airTemperature != null ? `${formatNumber(w.airTemperature)}°C` : '--');
-    // setMetricValue('humidity-metric', w.airHumidity != null ? `${formatNumber(w.airHumidity)}%` : '--');
-
     const s = plant.sensor || {};
     console.log(plant.sensor);
     setMetricValue('soil_moisture-metric', s.soilMoisture != null ? `${formatNumber(s.soilMoisture)}%` : '--');
@@ -292,18 +297,9 @@ function renderPlantMonitor(plant) {
     setMetricValue('temperature-metric', s.airTemperature != null ? `${formatNumber(s.airTemperature)}°C` : '--');
     setMetricValue('humidity-metric', s.airHumidity != null ? `${formatNumber(s.airHumidity)}%` : '--');
 
-    // Build optimal conditions map for comparison modal
+    // build optimal conditions map for comparison modal
     buildOptimalConditionsMap(plant);
 }
-
-// compute plant age in days
-// function computePlantAge(plantedDateStr) {
-//     const start = new Date(plantedDateStr);
-//     const now = new Date();
-//     if (isNaN(start.getTime())) return '--';
-//     const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-//     return `${diffDays} days`;
-// }
 
 function computePlantAge(plantedDateStr) {
     const start = new Date(plantedDateStr);
@@ -319,7 +315,7 @@ function computePlantAge(plantedDateStr) {
     return `${diffDays} days`;
 }
 
-// ----------------- Optimal conditions map & helpers -----------------
+// condition mapping
 function buildOptimalConditionsMap(plant) {
     const opt = plant.optimal || {};
     const w = plant.weather || {};
@@ -410,7 +406,7 @@ function buildOptimalConditionsMap(plant) {
     };
 }
 
-// ----------------- Comparison modal -----------------
+// comparison modal
 function showComparison(type) {
     const modal = document.getElementById('comparisonModal');
     const titleEl = document.getElementById('modalTitle');
@@ -462,7 +458,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeComparison();
 });
 
-// ----------------- Health toggle -----------------
+// health toggle
 let isDiseaseMode = false;
 function toggleHealthMode() {
     const healthContent = document.getElementById('healthContent');
@@ -487,7 +483,7 @@ function toggleHealthMode() {
     }
 }
 
-// ----------------- Refresh button -----------------
+// refresh button
 async function refreshData() {
     const refreshBtn = document.getElementById('refreshBtn');
     const refreshIcon = refreshBtn ? refreshBtn.querySelector('.fa-sync-alt') : null;
@@ -498,7 +494,7 @@ async function refreshData() {
             await loadSnapshot(selectedPlantId);
         } else {
             console.warn('Select a plant to refresh its live data.');
-            // Optionally load monitor data as fallback:
+
             await loadMonitorData();
         }
     } finally {
@@ -509,12 +505,12 @@ async function refreshData() {
     }
 }
 
-// ----------------- Settings stub -----------------
+//setting
 function showSettings() {
     alert('⚙️ Settings Panel Opened');
 }
 
-// ----------------- Startup -----------------
+// start point
 document.addEventListener('DOMContentLoaded', async () => {
     // Theme init
     let currentTheme = 'dark';
