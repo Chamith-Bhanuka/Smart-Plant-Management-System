@@ -12,17 +12,19 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post> {
+
     Page<Post> findByUser(User user, Pageable pageable);
+
     @Query("select p from Post p where " +
             "(lower(p.title) like lower(concat('%', :q, '%')) or " +
-            " lower(p.content) like lower(concat('%', :q, '%')) or " +
-            " lower(p.tags) like lower(concat('%', :q, '%')))")
+            " lower(cast(p.content as string)) like lower(concat('%', :q, '%')) or " +
+            " lower(cast(p.tags as string)) like lower(concat('%', :q, '%')))")
     Page<Post> searchAll(@Param("q") String q, Pageable pageable);
 
     @Query("select p from Post p where p.user = :user and " +
             "(lower(p.title) like lower(concat('%', :q, '%')) or " +
-            " lower(p.content) like lower(concat('%', :q, '%')) or " +
-            " lower(p.tags) like lower(concat('%', :q, '%')))")
+            " lower(cast(p.content as string)) like lower(concat('%', :q, '%')) or " +
+            " lower(cast(p.tags as string)) like lower(concat('%', :q, '%')))")
     Page<Post> searchMine(@Param("user") User user, @Param("q") String q, Pageable pageable);
 
     @Query(
@@ -35,5 +37,4 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
             nativeQuery = true
     )
     List<Object[]> countTags();
-
 }

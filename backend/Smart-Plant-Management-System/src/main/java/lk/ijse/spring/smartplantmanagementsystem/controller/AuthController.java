@@ -2,14 +2,12 @@ package lk.ijse.spring.smartplantmanagementsystem.controller;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import lk.ijse.spring.smartplantmanagementsystem.dto.APIResponse;
-import lk.ijse.spring.smartplantmanagementsystem.dto.AuthDTO;
-import lk.ijse.spring.smartplantmanagementsystem.dto.AuthResponseDTO;
-import lk.ijse.spring.smartplantmanagementsystem.dto.RegisterDTO;
+import lk.ijse.spring.smartplantmanagementsystem.dto.*;
 import lk.ijse.spring.smartplantmanagementsystem.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -73,6 +71,14 @@ public class AuthController {
         cookie.setAttribute("SameSite", "Strict");
 
         return ResponseEntity.ok(Map.of("message", "Logout successfully..!"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<MeDTO> me(@AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails user) {
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        String email = user.getUsername();
+        String role = user.getAuthorities().stream().findFirst().map(Object::toString).orElse("USER");
+        return ResponseEntity.ok(new MeDTO(email, role));
     }
 
 }

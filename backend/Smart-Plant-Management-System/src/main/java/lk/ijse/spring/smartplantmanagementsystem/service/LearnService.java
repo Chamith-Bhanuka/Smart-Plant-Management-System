@@ -13,7 +13,6 @@ import lk.ijse.spring.smartplantmanagementsystem.repository.UserRepository;
 import lk.ijse.spring.smartplantmanagementsystem.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,7 @@ public class LearnService {
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
 
-    private Page<PostDTO> list(String filter, String search, Pageable pageable, String userEmail) {
+    public Page<PostDTO> list(String filter, String search, Pageable pageable, String userEmail) {
         User user = userRepo.findByEmail(userEmail).orElseThrow();
         Page<Post> page;
 
@@ -141,6 +140,9 @@ public class LearnService {
         // current user vote state
         voteRepo.findByPostIdAndUserId(p.getId(), currentUser.getId())
                 .ifPresent(v -> dto.setUserVote(v.getType() == Vote.Type.UP ? "up" : "down"));
+
+        System.out.println("👎: " + dto.getDownVotes());
+        System.out.println("👍: " + dto.getUpVotes());
         return dto;
     }
 
