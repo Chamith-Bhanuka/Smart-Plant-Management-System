@@ -38,7 +38,8 @@ public class HttpSensorProvider implements SensorProvider {
             return new SensorNow(temp, humidity, soilMoisture, 900.0);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch sensor data", e);
+            //throw new RuntimeException("Failed to fetch sensor data", e);
+            return new SensorNow(0.0, 0.0, 0.0, 0.0);
         } finally {
             System.out.println("esp32 base url: " + esp32BaseUrl);
             System.out.println("php server url: " + phpServerBaseUrl);
