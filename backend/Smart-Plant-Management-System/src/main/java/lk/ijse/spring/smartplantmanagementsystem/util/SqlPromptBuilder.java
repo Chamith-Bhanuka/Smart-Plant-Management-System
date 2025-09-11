@@ -7,20 +7,20 @@ public class SqlPromptBuilder {
 
     public String schemaHelp() {
         return """
-        You are an expert Text-to-SQL generator for a MySQL database named 'smartfarm'.
+        You are an expert Text-to-SQL generator for a MySQL database named 'spms'.
         Generate SAFE, syntactically correct MySQL. Use only the provided tables/columns.
 
         Tables:
-        - user(id, email, full_name)
-        - plant(id, user_id, name, species, location_id, planted_date)
-        - location(id, name, description)
-        - sensor_data(id, plant_id, timestamp, temperature, humidity, soil_moisture, light_intensity)
-        - weather_data(id, location_id, timestamp, temperature, humidity, wind_speed, precipitation, uv_index, cloud_cover, pressure, et0)
-        - optimal_conditions(id, species, min_temp, max_temp, min_humidity, max_humidity, min_soil_moisture, max_soil_moisture, min_light, max_light)
-        - post(id, user_id, title, content, tags, up_votes, down_votes, created_at, updated_at)
+        - user(id, email, password, role)
+        - plant(id, scientific_name, common_name, score, image_path, planted_date, user_id, location_id, optimal_conditions_id)
+        - location(id, latitude, longitude)
+        - sensor_data(id, air_humidity, air_temperature, light_intensity, soil_moisture, timestamp, plant_id)
+        - weather_data(id,timestamp,temperature,humidity,precipitation,windSpeed,windGusts,cloudCover,uvIndex,evapotranspiration,pressure,location_id)
+        - optimal_conditions(id,plantName,idealTemperature,idealHumidity,idealRainfall,soilType,sunlightExposure,daysToHarvest,yieldPredictionKg)
+        - post(id,title,content,coverImagePath,tags,upVotes,downVotes,user_id,createdAt,updatedAt)
         - comment(id, post_id, user_id, text, created_at)
-        - vote(id, post_id, user_id, type, created_at)
-        - refresh_token(id, user_id, token, expires_at)
+        - vote(id, post_id, user_id, type, created_at, updated_at)
+        - refresh_token(id, user_id, token, expiry_date)
 
         Rules:
         - Prefer WHERE timestamp >= NOW() - INTERVAL 7 DAY for "last week".
@@ -56,18 +56,21 @@ public class SqlPromptBuilder {
 
     public String buildAnswerPrompt(String question, String sql, String resultJson) {
         return """
-        You are a helpful assistant. The user asked:
-        "%s"
+    You are a helpful assistant. The user asked:
+    "%s"
 
-        We executed this SQL:
-        ```sql
-        %s
-        ```
+    We executed this SQL:
+    ```sql
+    %s
+    ```
 
-        JSON result:
-        %s
+    JSON result:
+    %s
 
-        Explain the answer clearly in one or two short paragraphs. If no rows, say so. If numeric aggregates, include the value with unit if evident (e.g., % for soil_moisture).
-        """.formatted(question, sql, resultJson);
+    Explain the answer clearly in one or two short paragraphs.\s
+    If no rows, say so.\s
+    If numeric aggregates, include the value with unit if evident (e.g., %% for soil_moisture).
+   \s""".formatted(question, sql, resultJson);
     }
+
 }

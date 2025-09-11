@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ Enable CORS
                 .authorizeHttpRequests(auth ->
                         auth
-                                .requestMatchers("/auth/**", "/uploads/**").permitAll()
+                                .requestMatchers("/auth/**", "/uploads/**", "/ai/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->

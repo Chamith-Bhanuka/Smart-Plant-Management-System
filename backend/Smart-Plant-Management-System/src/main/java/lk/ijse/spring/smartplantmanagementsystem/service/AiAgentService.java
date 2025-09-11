@@ -27,7 +27,7 @@ public class AiAgentService {
     @Value("${ai.model.answer:mistral}")
     private String answerModel;
 
-    private AiChatResponse handle(String question, Long plantId, boolean sqlOnly) throws Exception {
+    public AiChatResponse handle(String question, Long plantId, boolean sqlOnly) throws Exception {
         //generate sql
         String sqlPrompt = prompts.buildSqlPrompt(question, plantId);
         String llmSql = ollama.generate(sqlModel, sqlPrompt);
