@@ -38,6 +38,14 @@ public class AiAgentService {
             return withSqlOnly(sql);
         }
 
+        if (question.trim().equalsIgnoreCase("hello") || question.trim().length() < 5) {
+            AiChatResponse resp = new AiChatResponse();
+            resp.setSql("(none)");
+            resp.setResult(List.of());
+            resp.setAnswer("Hello! How can I help with your farm today?");
+            return resp;
+        }
+
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
         String resultJson = objectMapper.writeValueAsString(rows);
