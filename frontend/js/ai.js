@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENT SELECTORS ---
+    // Elements
     const themeToggle = document.getElementById('theme-toggle');
     const menuToggle = document.getElementById('menu-toggle');
     const sidebar = document.getElementById('sidebar');
@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const newChatBtn = document.getElementById('new-chat-btn');
     const chatHistoryContainer = document.getElementById('chat-history');
 
-    // --- PLANT SELECTOR ELEMENTS ---
     const plantSelectorBtn = document.getElementById('plant-selector-btn');
     const plantSelectorPanel = document.getElementById('plant-selector-panel');
     const plantGrid = document.getElementById('plant-grid');
@@ -18,13 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextPageBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
 
-    // --- STATE MANAGEMENT ---
+    // State
+    const API_BASE = 'http://localhost:8080';
+    let accessToken = null;
     let conversations = [];
     let activeConversationId = null;
-    let plantData = [];
-    let plantPagination = { currentPage: 1, itemsPerPage: 4, searchTerm: '' };
+    let plantPagination = { currentPage: 1, itemsPerPage: 6, searchTerm: '' };
+    let plantsLookup = [];     // {id, name, species}
+    let selectedPlant = null;  // {id, name}
 
-    // --- THEME MANAGEMENT ---
+    // Theme
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
@@ -34,8 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         applyTheme(newTheme);
     });
+    applyTheme(localStorage.getItem('smartfarm-theme') || 'dark');
 
-    // --- RESPONSIVE SIDEBAR ---
+    // Sidebar
     menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
     document.addEventListener('click', (e) => {
         if (!sidebar.contains(e.target) && !menuToggle.contains(e.target) && sidebar.classList.contains('open')) {
@@ -43,161 +46,185 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- CHAT HISTORY & CONVERSATION LOGIC ---
+    // Auth helpers
+    async function refreshToken() {
+        const res = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST', credentials: 'include' });
+        if (!res.ok) throw new Error('Not authenticated');
+        const data = await res.json();
+        accessToken = data.accessToken;
+    }
+    async function api(path, options = {}, retry = true) {
+        await refreshToken();
+        const headers = options.headers ? {...options.headers} : {};
+        headers['Authorization'] = 'Bearer ' + accessToken;
+        const res = await fetch(API_BASE + path, { ...options, headers, credentials: 'include' });
+        if (res.status === 401 && retry) {
+            await refreshToken();
+            headers['Authorization'] = 'Bearer ' + accessToken;
+            return fetch(API_BASE + path, { ...options, headers, credentials: 'include' });
+        }
+        return res;
+    }
+
+    // Conversations
     function renderChatHistory() {
         chatHistoryContainer.innerHTML = '';
         conversations.forEach(convo => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.dataset.id = convo.id;
-            if (convo.id === activeConversationId) {
-                historyItem.classList.add('active');
-            }
-            historyItem.innerHTML = `
-                        <span>${convo.title}</span>
-                        <button class="delete-chat-btn" data-id="${convo.id}"><i class="fas fa-trash"></i></button>
-                    `;
-            chatHistoryContainer.appendChild(historyItem);
+            const el = document.createElement('div');
+            el.className = 'history-item' + (convo.id === activeConversationId ? ' active' : '');
+            el.dataset.id = convo.id;
+            el.innerHTML = `
+        <span>${convo.title}</span>
+        <button class="delete-chat-btn" data-id="${convo.id}"><i class="fas fa-trash"></i></button>
+      `;
+            chatHistoryContainer.appendChild(el);
         });
     }
-
     function switchConversation(id) {
         activeConversationId = id;
         renderChatHistory();
         renderMessages();
     }
-
     function startNewConversation() {
-        const newConvo = {
-            id: Date.now(),
-            title: 'New Conversation',
-            messages: []
-        };
-        conversations.unshift(newConvo);
-        switchConversation(newConvo.id);
+        const c = { id: Date.now(), title: 'New Conversation', messages: [] };
+        conversations.unshift(c);
+        switchConversation(c.id);
     }
-
     function deleteConversation(id) {
         conversations = conversations.filter(c => c.id !== id);
-        if (activeConversationId === id) {
-            activeConversationId = conversations.length > 0 ? conversations[0].id : null;
-        }
+        if (activeConversationId === id) activeConversationId = conversations.length ? conversations[0].id : null;
         renderChatHistory();
         renderMessages();
     }
-
     chatHistoryContainer.addEventListener('click', (e) => {
-        const historyItem = e.target.closest('.history-item');
-        const deleteBtn = e.target.closest('.delete-chat-btn');
-
-        if (deleteBtn) {
+        const item = e.target.closest('.history-item');
+        const del = e.target.closest('.delete-chat-btn');
+        if (del) {
             e.stopPropagation();
-            const id = parseInt(deleteBtn.dataset.id);
-            deleteConversation(id);
-        } else if (historyItem) {
-            const id = parseInt(historyItem.dataset.id);
-            switchConversation(id);
+            deleteConversation(Number(del.dataset.id));
+        } else if (item) {
+            switchConversation(Number(item.dataset.id));
         }
     });
-
     newChatBtn.addEventListener('click', startNewConversation);
 
-    // --- MESSAGE HANDLING ---
+    // Messages
     function renderMessages() {
         chatMessages.innerHTML = '';
-        const activeConvo = conversations.find(c => c.id === activeConversationId);
-
-        if (!activeConvo || activeConvo.messages.length === 0) {
+        const convo = conversations.find(c => c.id === activeConversationId);
+        if (!convo || !convo.messages.length) {
             chatMessages.innerHTML = `<div class="welcome-message"><h1>Hello, User</h1><p style="color: var(--text-secondary)">How can I help with your farm today?</p></div>`;
             return;
         }
-
-        activeConvo.messages.forEach(msg => {
-            addMessageToDOM(msg.content, msg.sender);
-        });
+        convo.messages.forEach(m => addMessageToDOM(m.content, m.sender));
     }
-
     function addMessageToDOM(content, sender) {
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${sender}`;
+        const el = document.createElement('div');
+        el.className = `message ${sender}`;
         const avatarUrl = sender === 'user' ? 'https://placehold.co/32x32/22c55e/FFF?text=U' : 'https://placehold.co/32x32/16a34a/FFF?text=AI';
-        messageEl.innerHTML = `<img src="${avatarUrl}" alt="${sender} avatar" class="avatar"><div class="message-content">${content}</div>`;
-        chatMessages.appendChild(messageEl);
+        el.innerHTML = `<img src="${avatarUrl}" class="avatar"><div class="message-content">${content}</div>`;
+        chatMessages.appendChild(el);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-
-    function addMessageToConversation(content, sender) {
-        if (!activeConversationId) {
-            startNewConversation();
-        }
-        const activeConvo = conversations.find(c => c.id === activeConversationId);
-        activeConvo.messages.push({ content, sender });
-
-        // Update conversation title with first user message
-        if (activeConvo.messages.length === 1 && sender === 'user') {
-            activeConvo.title = content.substring(0, 25) + (content.length > 25 ? '...' : '');
+    function addMessage(content, sender) {
+        if (!activeConversationId) startNewConversation();
+        const convo = conversations.find(c => c.id === activeConversationId);
+        convo.messages.push({ content, sender });
+        if (convo.messages.length === 1 && sender === 'user') {
+            convo.title = content.substring(0, 25) + (content.length > 25 ? '...' : '');
             renderChatHistory();
         }
-
-        // Remove welcome message if it exists
-        const welcomeMessage = chatMessages.querySelector('.welcome-message');
-        if (welcomeMessage) welcomeMessage.remove();
+        const welcome = chatMessages.querySelector('.welcome-message');
+        if (welcome) welcome.remove();
         addMessageToDOM(content, sender);
     }
 
-    function sendUserMessage() {
-        const messageText = chatInput.value.trim();
-        if (messageText) {
-            addMessageToConversation(messageText, 'user');
-            chatInput.value = '';
-            setTimeout(() => {
-                addMessageToConversation(`I'm processing your query about: "${messageText}". Please give me a moment.`, 'ai');
-            }, 1000);
+    async function sendUserMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // Augment the question with plant name for user readability; pass plantId to backend
+        const displayText = selectedPlant ? `${text} (Plant: ${selectedPlant.name})` : text;
+
+        addMessage(displayText, 'user');
+        chatInput.value = '';
+
+        // Call backend
+        try {
+            const res = await api('/ai/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: text,
+                    plantId: selectedPlant ? selectedPlant.id : null,
+                    sqlOnly: false
+                })
+            });
+            if (!res.ok) {
+                addMessage("I couldn't process that request. Please try again.", 'ai');
+                return;
+            }
+            const data = await res.json();
+
+            // Optional: show SQL for debug (toggle/comment out as needed)
+            // addMessage(`<pre><code>${data.sql}</code></pre>`, 'ai');
+
+            addMessage(data.answer || 'No answer available.', 'ai');
+
+        } catch (e) {
+            console.error(e);
+            addMessage('Something went wrong while talking to the AI.', 'ai');
         }
     }
 
     sendBtn.addEventListener('click', sendUserMessage);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendUserMessage(); });
 
-    // --- PLANT SELECTOR LOGIC ---
-    function renderPlantSelector() {
-        const filteredPlants = plantData.filter(p => p.name.toLowerCase().includes(plantPagination.searchTerm.toLowerCase()));
-        const totalPages = Math.ceil(filteredPlants.length / plantPagination.itemsPerPage);
-        plantPagination.currentPage = Math.min(plantPagination.currentPage, totalPages) || 1;
-
+    // Plant selector
+    function paginate(arr) {
+        const filtered = arr.filter(p => p.name.toLowerCase().includes(plantPagination.searchTerm.toLowerCase()));
+        const totalPages = Math.ceil(filtered.length / plantPagination.itemsPerPage) || 1;
+        plantPagination.currentPage = Math.min(plantPagination.currentPage, totalPages);
         const start = (plantPagination.currentPage - 1) * plantPagination.itemsPerPage;
-        const end = start + plantPagination.itemsPerPage;
-        const paginatedPlants = filteredPlants.slice(start, end);
-
+        return { list: filtered.slice(start, start + plantPagination.itemsPerPage), totalPages };
+    }
+    function renderPlantSelector() {
+        const { list, totalPages } = paginate(plantsLookup);
         plantGrid.innerHTML = '';
-        paginatedPlants.forEach(plant => {
+        list.forEach(p => {
             const card = document.createElement('div');
             card.className = 'plant-card';
-            card.dataset.plantName = plant.name;
-            card.innerHTML = `<img src="${plant.img}" alt="${plant.name}"><h4>${plant.name}</h4><p>${plant.location}</p>`;
+            card.dataset.plantId = p.id;
+            card.dataset.plantName = p.name;
+            card.innerHTML = `<img src="https://placehold.co/80x80/22c55e/FFF?text=${p.name.charAt(0).toUpperCase()}"><h4>${p.name}</h4><p>${p.species || ''}</p>`;
             plantGrid.appendChild(card);
         });
-
-        pageInfo.textContent = `Page ${plantPagination.currentPage} of ${totalPages || 1}`;
+        pageInfo.textContent = `Page ${plantPagination.currentPage} of ${totalPages}`;
         prevPageBtn.disabled = plantPagination.currentPage === 1;
-        nextPageBtn.disabled = plantPagination.currentPage === totalPages || totalPages === 0;
+        nextPageBtn.disabled = plantPagination.currentPage === totalPages;
     }
 
-    plantSelectorBtn.addEventListener('click', (e) => { e.stopPropagation(); plantSelectorPanel.classList.toggle('open'); });
-    plantSearchInput.addEventListener('input', () => { plantPagination.searchTerm = plantSearchInput.value; plantPagination.currentPage = 1; renderPlantSelector(); });
+    plantSelectorBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        plantSelectorPanel.classList.toggle('open');
+        if (plantSelectorPanel.classList.contains('open') && !plantsLookup.length) {
+            await searchPlants(''); // initial load
+        }
+    });
+    plantSearchInput.addEventListener('input', async () => {
+        plantPagination.searchTerm = plantSearchInput.value;
+        plantPagination.currentPage = 1;
+        await searchPlants(plantPagination.searchTerm);
+    });
     prevPageBtn.addEventListener('click', () => { if (plantPagination.currentPage > 1) { plantPagination.currentPage--; renderPlantSelector(); } });
     nextPageBtn.addEventListener('click', () => { plantPagination.currentPage++; renderPlantSelector(); });
 
     plantGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.plant-card');
-        if (card) {
-            const plantName = card.dataset.plantName;
-            addMessageToConversation(`Tell me about my ${plantName}.`, 'user');
-            plantSelectorPanel.classList.remove('open');
-            setTimeout(() => {
-                addMessageToConversation(`Of course. Analyzing the latest data for your ${plantName}. The current soil moisture is 55%, which is optimal.`, 'ai');
-            }, 1000);
-        }
+        if (!card) return;
+        selectedPlant = { id: Number(card.dataset.plantId), name: card.dataset.plantName };
+        plantSelectorPanel.classList.remove('open');
+        addMessage(`Selected plant: ${selectedPlant.name}`, 'ai');
     });
 
     document.addEventListener('click', (e) => {
@@ -206,45 +233,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- INITIALIZATION ---
-    function initialize() {
-        applyTheme(localStorage.getItem('smartfarm-theme') || 'dark');
-        // Mock data for plants
-        plantData = [
-            { name: 'Heirloom Tomato', location: 'Zone A', img: 'https://placehold.co/80x80/ef4444/FFF?text=Tomato' },
-            { name: 'Bell Pepper', location: 'Zone B', img: 'https://placehold.co/80x80/22c55e/FFF?text=Pepper' },
-            { name: 'Cucumber', location: 'Greenhouse', img: 'https://placehold.co/80x80/16a34a/FFF?text=Cucumber' },
-            { name: 'Strawberry', location: 'Hydroponics', img: 'https://placehold.co/80x80/dc2626/FFF?text=Berry' },
-            { name: 'Lettuce', location: 'Vertical Farm', img: 'https://placehold.co/80x80/84cc16/FFF?text=Lettuce' },
-            { name: 'Carrot', location: 'Field 3', img: 'https://placehold.co/80x80/f97316/FFF?text=Carrot' },
-            { name: 'Basil', location: 'Herb Garden', img: 'https://placehold.co/80x80/10b981/FFF?text=Basil' },
-        ];
-        renderPlantSelector();
-        startNewConversation();
+    async function searchPlants(q) {
+        try {
+            const res = await api(`/plants/lookup?q=${encodeURIComponent(q || '')}`);
+            if (!res.ok) return;
+            plantsLookup = await res.json(); // [{id, name, species}]
+            renderPlantSelector();
+        } catch (e) {
+            console.error('Plant lookup error', e);
+        }
     }
 
-    initialize();
-
-
-    plantGrid.addEventListener('click', async (e) => {
-        const card = e.target.closest('.plant-card');
-        if (card) {
-            const plantName = card.dataset.plantName;
-            addMessageToConversation(`Tell me about my ${plantName}.`, 'user');
-            plantSelectorPanel.classList.remove('open');
-
-            try {
-                const res = await fetch(`http://localhost:8080/chat/plant?name=${encodeURIComponent(plantName)}`, {
-                    method: 'GET',
-                    credentials: 'include'
-                });
-                const data = await res.json();
-                const reply = formatPlantChatResponse(data);
-                addMessageToConversation(reply, 'ai');
-            } catch (err) {
-                addMessageToConversation(`Sorry, I couldn't load data for ${plantName}.`, 'ai');
-            }
-        }
-    });
-
+    // Init
+    (async function init() {
+        await refreshToken();
+        applyTheme(localStorage.getItem('smartfarm-theme') || 'dark');
+        startNewConversation();
+    })();
 });

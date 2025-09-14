@@ -28,6 +28,9 @@ html[data-theme="light"] {
     --danger-color: #dc2626;
 }
 
+/* --------------------------------------------------- */
+/* GENERAL & LAYOUT STYLES */
+/* --------------------------------------------------- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -68,7 +71,9 @@ body::before {
 .theme-toggle { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem; }
 .user-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary-glow); }
 
+/* --------------------------------------------------- */
 /* MAIN CHAT AREA */
+/* --------------------------------------------------- */
 .chat-area { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
 .chat-messages { flex-grow: 1; padding: 2rem; overflow-y: auto; }
 .welcome-message { text-align: center; margin: auto; }
@@ -87,7 +92,9 @@ body::before {
 .input-btn { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-secondary); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1rem; transition: all 0.3s ease; }
 .input-btn:hover { color: var(--primary-glow); border-color: var(--primary-glow); }
 
+/* --------------------------------------------------- */
 /* PLANT SELECTOR PANEL */
+/* --------------------------------------------------- */
 #plant-selector-panel { position: absolute; bottom: 100%; left: 2rem; width: calc(100% - 4rem); max-width: 600px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); opacity: 0; visibility: hidden; transform: translateY(20px); transition: all 0.3s ease; display: flex; flex-direction: column; }
 #plant-selector-panel.open { opacity: 1; visibility: visible; transform: translateY(0); }
 .plant-selector-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -102,7 +109,9 @@ body::before {
 .pagination button { background: none; border: none; color: var(--text-secondary); cursor: pointer; }
 .pagination button:disabled { cursor: not-allowed; opacity: 0.5; }
 
+/* --------------------------------------------------- */
 /* RESPONSIVE DESIGN */
+/* --------------------------------------------------- */
 @media (max-width: 768px) {
     .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); z-index: 200; }
     .sidebar.open { transform: translateX(0); }
