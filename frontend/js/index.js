@@ -53,6 +53,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     ];
 
+    // async function checkAuthAndRedirect(targetPage) {
+    //     try {
+    //         const response = await fetch('http://localhost:8080/auth/refresh', {
+    //             method: 'POST',
+    //             credentials: 'include'
+    //         });
+    //
+    //         if (response.ok) {
+    //             const result = await response.json();
+    //             localStorage.setItem('accessToken', result.accessToken);
+    //             window.location.href = `http://localhost:63343/frontend/${targetPage}.html`;
+    //             // http://localhost:63343/frontend/index.html
+    //         } else {
+    //             redirectToLogin(targetPage);
+    //         }
+    //     } catch (error) {
+    //         console.error("Auth check failed:", error);
+    //         redirectToLogin(targetPage);
+    //     }
+    // }
+
     async function checkAuthAndRedirect(targetPage) {
         try {
             const response = await fetch('http://localhost:8080/auth/refresh', {
@@ -63,8 +84,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.ok) {
                 const result = await response.json();
                 localStorage.setItem('accessToken', result.accessToken);
-                window.location.href = `http://localhost:63343/frontend/${targetPage}.html`;
-                // http://localhost:63343/frontend/index.html
+
+                const url = `http://localhost:63343/frontend/${targetPage}.html`;
+
+                if (targetPage === 'ai' || targetPage === 'monitor') {
+                    // open in a new tab
+                    window.open(url, '_blank');
+                } else {
+                    // open in the same tab
+                    window.location.href = url;
+                }
             } else {
                 redirectToLogin(targetPage);
             }
@@ -73,6 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             redirectToLogin(targetPage);
         }
     }
+
 
     function redirectToLogin(redirectTarget) {
         window.location.href = `http://localhost:63343/frontend/auth.html?redirect=${redirectTarget}`;

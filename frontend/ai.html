@@ -1,52 +1,65 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SmartFarm Nexus | AI Assistant</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"/>
   <link rel="stylesheet" href="styles/ai.css">
 </head>
 <body>
-
-<button class="menu-toggle" id="menu-toggle" style="display:none;"><i class="fas fa-bars"></i></button>
-
 <div class="chat-container">
-  <aside class="sidebar" id="sidebar">
+  <!-- Sidebar -->
+  <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="logo"><i class="fas fa-seedling"></i><span>AI Chat</span></div>
-      <button class="new-chat-btn" id="new-chat-btn"><i class="fas fa-plus"></i></button>
+      <div class="logo">
+        <i class="fas fa-seedling"></i>
+        <span>AI Chat</span>
+      </div>
+      <button class="new-chat-btn" id="new-chat-btn">
+        <i class="fas fa-plus"></i>
+      </button>
     </div>
     <div class="chat-history" id="chat-history"></div>
     <div class="sidebar-footer">
-      <button class="theme-toggle" id="theme-toggle"><i class="fas fa-sun"></i></button>
-      <img src="https://placehold.co/32x32/22c55e/FFF?text=U" alt="User Avatar" class="user-avatar">
+      <button class="theme-toggle" id="theme-toggle">
+        <i class="fas fa-sun"></i>
+      </button>
+      <img src="https://placehold.co/32x32/22c55e/FFF?text=U"
+           alt="User Avatar" class="user-avatar"/>
     </div>
   </aside>
 
+  <!-- Main Chat Area -->
   <main class="chat-area">
     <div class="chat-messages" id="chat-messages"></div>
+
     <div class="chat-input-area">
+      <!-- Plant Selector Panel -->
       <div id="plant-selector-panel">
         <div class="plant-selector-header">
-          <input type="text" id="plant-search-input" class="input-field" placeholder="Search plants...">
+          <input id="plant-search" type="text" placeholder="Search plants..."/>
         </div>
         <div class="plant-grid" id="plant-grid"></div>
         <div class="pagination">
-          <button id="prev-page-btn"><i class="fas fa-chevron-left"></i></button>
-          <span id="page-info"></span>
-          <button id="next-page-btn"><i class="fas fa-chevron-right"></i></button>
+          <button id="prev-plant">Prev</button>
+          <span id="plant-page-info"></span>
+          <button id="next-plant">Next</button>
         </div>
       </div>
+
+      <!-- Input Wrapper -->
       <div class="chat-input-wrapper">
-        <button class="input-btn" id="plant-selector-btn"><i class="fas fa-plus"></i></button>
-        <input type="text" id="chat-input" placeholder="Ask about your plants...">
-        <button class="input-btn" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        <button class="input-btn" id="plant-selector-btn">
+          <i class="fas fa-plus"></i>
+        </button>
+        <input type="text" id="chat-input" placeholder="Ask about your plants..."/>
+        <button class="input-btn" id="send-btn">
+          <i class="fas fa-paper-plane"></i>
+        </button>
       </div>
     </div>
   </main>
