@@ -474,12 +474,19 @@ function toggleHealthMode() {
       <button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-arrow-left"></i> Back to General Status</button>
     </div>`;
     } else {
-        healthScore.className = 'health-score-badge score-warning';
-        healthScore.innerHTML = `72 <span>Health</span>`;
-        healthContent.innerHTML = `<div class="health-status">
-      <p>Plant is in flowering stage with healthy root development. Growth rate is within normal parameters.</p>
-      <button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-search"></i> Check for Diseases</button>
-    </div>`;
+    //     healthScore.className = 'health-score-badge score-warning';
+    //     healthScore.innerHTML = `72 <span>Health</span>`;
+    //     healthContent.innerHTML = `<div class="health-status">
+    //   <p>Plant is in flowering stage with healthy root development. Growth rate is within normal parameters.</p>
+    //   <button class="diagnosis-btn" onclick="toggleHealthMode()"><i class="fas fa-search"></i> Check for Diseases</button>
+    // </div>`;
+        healthContent.innerHTML = `
+  <div class="health-status">
+    <p>Plant is in flowering stage with healthy root development. Growth rate is within normal parameters.</p>
+    <button class="diagnosis-btn" onclick="checkDisease(selectedPlantId)">
+      <i class="fas fa-search"></i> Check for Diseases
+    </button>
+  </div>`;
     }
 }
 
@@ -508,6 +515,47 @@ async function refreshData() {
 //setting
 function showSettings() {
     alert('⚙️ Settings Panel Opened');
+}
+
+/**
+ * Call Spring Boot → ESP32 → PHP → Python model,
+ * render and persist the disease result.
+ */
+async function checkDisease(plantId) {
+    const healthContent = document.getElementById('healthContent');
+    healthContent.innerHTML = `<p>Analyzing for diseases…</p>`;
+
+    try {
+        const res = await apiFetch(
+            `http://localhost:8080/plants/${plantId}/check-disease`,
+            { method: 'POST' }
+        );
+        if (!res.ok) throw new Error('Network error');
+
+        const { decision, label, confidence, imageUrl } = await res.json();
+
+        healthContent.innerHTML = `
+      <div class="health-status disease-alert">
+        <h4 style="margin-bottom:0.5rem; color: var(--danger);">
+          Disease Alert: ${decision}
+        </h4>
+        <p>Model Label: ${label} &nbsp;|&nbsp; Confidence: ${(confidence*100).toFixed(1)}%</p>
+        <img src="${imageUrl}" 
+             style="max-width:240px; display:block; margin:8px auto; border-radius:8px;">
+        <button class="diagnosis-btn" onclick="toggleHealthMode()">
+          <i class="fas fa-arrow-left"></i> Back to General Status
+        </button>
+      </div>`;
+    } catch (err) {
+        console.error('Disease check failed', err);
+        healthContent.innerHTML = `
+      <div class="health-status disease-alert">
+        <p style="color: var(--danger);">Error checking for disease. Please try again.</p>
+        <button class="diagnosis-btn" onclick="toggleHealthMode()">
+          <i class="fas fa-arrow-left"></i> Back to General Status
+        </button>
+      </div>`;
+    }
 }
 
 // start point

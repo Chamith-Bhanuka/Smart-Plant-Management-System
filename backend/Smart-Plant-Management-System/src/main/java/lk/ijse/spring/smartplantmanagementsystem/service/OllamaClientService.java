@@ -25,6 +25,9 @@ public class OllamaClientService {
     private String baseUrl;
     private final RestTemplate restTemplate;
 
+    @Value("${ollama.model}")
+    private String model;
+
     public String generate(String model, String prompt) {
         int attempts = 0;
         while (attempts < 2) {
@@ -67,5 +70,30 @@ public class OllamaClientService {
         String answer = Objects.toString(resp.getBody().get("response"), "");
         log.debug("Ollama response ({} chars)", answer.length());
         return answer;
+    }
+
+    public String generateInsights(String label) {
+        String prompt = "The plant disease model predicts \"" + label +
+                "\". Provide concise treatment recommendations in 2–3 sentences.";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String,Object> body = Map.of(
+                "model", model,
+                "messages", new Object[]{
+                        Map.of("role", "user", "content", prompt)
+                }
+        );
+
+        HttpEntity<Map<String,Object>> req = new HttpEntity<>(body, headers);
+        ResponseEntity<Map> resp = restTemplate.postForEntity("http://localhost:5000/predict", req, Map.class);
+
+        @SuppressWarnings("unchecked")
+        var choices = (Iterable<Map<String,Object>>) resp.getBody().get("choices");
+        Map<String,Object> first = choices.iterator().next();
+        @SuppressWarnings("unchecked")
+        Map<String,String> message = (Map<String,String>) first.get("message");
+        return message.get("content").strip();
     }
 }

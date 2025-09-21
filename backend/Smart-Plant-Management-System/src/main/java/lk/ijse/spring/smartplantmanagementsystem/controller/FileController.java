@@ -91,4 +91,16 @@ public class FileController {
                 .body(resource);
     }
 
+    @GetMapping("/uploads/diagnoses/{filename:.+}")
+    public ResponseEntity<Resource> getDFile(@PathVariable String filename) throws IOException {
+        Path path = Paths.get("uploads/diagnoses").resolve(filename).normalize();
+        Resource resource = new FileSystemResource(path);
+        if (!resource.exists()) return ResponseEntity.notFound().build();
+
+        String mimeType = Files.probeContentType(path);
+        return ResponseEntity.ok()
+                .contentType(mimeType != null ? MediaType.parseMediaType(mimeType) : MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+    }
+
 }

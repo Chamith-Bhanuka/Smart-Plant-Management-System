@@ -5,6 +5,7 @@ import lk.ijse.spring.smartplantmanagementsystem.util.JWTAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -36,15 +37,18 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ Enable CORS
-                .authorizeHttpRequests(auth ->
-                        auth
-                                .requestMatchers("/auth/**", "/uploads/**", "/ai/**").permitAll()
-                                .anyRequest().authenticated()
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        // 1) Allow anyone to fetch stored diagnosis images
+                        .requestMatchers(HttpMethod.GET, "/uploads/diagnoses/**").permitAll()
+                        // Others
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        // open your auth & AI endpoints
+                        .requestMatchers("/auth/**", "/ai/**", "/plants/**").permitAll()
+                        // everything else needs a valid JWT
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
@@ -54,6 +58,8 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
