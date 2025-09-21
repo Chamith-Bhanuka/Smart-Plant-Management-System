@@ -44,51 +44,6 @@ public class PlantService {
     private final OptimalConditionsRepository optimalConditionsRepository;
     private final UserRepository userRepository;
 
-
-//    public Plant identifyAndSave(MultipartFile file) throws IOException {
-//
-//        //save file locally
-//        String filePath = uploadDir + System.currentTimeMillis() + "_" + file.getOriginalFilename();
-//        Path path = Paths.get(filePath);
-//        Files.createDirectories(path.getParent());
-//        Files.write(path, file.getBytes());
-//
-//        // Call PlantNet API
-//        RestTemplate restTemplate = new RestTemplate();
-//
-//        String url = apiUrl + "?api-key=" + apiKey;
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-//
-//        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-//        body.add("images", new FileSystemResource(new File(filePath)));
-//        body.add("organs", "leaf");
-//
-//        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-//        ResponseEntity<JsonNode> response = restTemplate.postForEntity(url, request, JsonNode.class);
-//
-//        // Parse response
-//        JsonNode suggestions = response.getBody().path("results");
-//        JsonNode bestMatch = suggestions.get(0);
-//
-//        String scientificName = bestMatch.path("species").path("scientificNameWithoutAuthor").asText();
-//        String commonName = bestMatch.path("species").path("commonNames").get(0).asText("");
-//        Double score = bestMatch.path("score").asDouble();
-//
-//        Plant plant = new Plant(
-//                null,
-//                scientificName,
-//                commonName,
-//                score,
-//                filePath,
-//                null,
-//                null,
-//                null
-//        );
-//        return plantRepository.save(plant);
-//    }
-
     public Plant setupPlant(PlantSetupDTO dto, String userEmail) throws IOException {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));

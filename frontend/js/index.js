@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const url = `http://localhost:63343/frontend/${targetPage}.html`;
 
-                if (targetPage === 'ai' || targetPage === 'monitor') {
+                if (targetPage === 'ai' || targetPage === 'monitor' || targetPage === 'diagnostics') {
                     // open in a new tab
                     window.open(url, '_blank');
                 } else {
@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleDiagnosticsClick() {
-        console.log("Diagnostics clicked!");
+        checkAuthAndRedirect('diagnostics');
     }
 
     function handleExpertClick() {
