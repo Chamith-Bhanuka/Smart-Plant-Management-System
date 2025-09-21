@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFarm Nexus | AI Plant Diagnosis</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/diagnostics.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">
+        <i class="fas fa-microscope"></i>
+        <span>SmartFarm Nexus</span>
+    </div>
+    <div class="header-actions">
+        <div class="case-number" id="case-number">
+            <i class="fas fa-hashtag"></i>
+            <span id="case-id"></span>
+            <div class="copy-tooltip">Copy code to assign case to expert</div>
+        </div>
+        <button class="theme-toggle" id="theme-toggle">
+            <i class="fas fa-sun"></i>
+        </button>
+    </div>
+</header>
+
+<main class="main-container">
+    <!-- Upload Panel -->
+    <div class="panel">
+        <h2 class="panel-title">
+            <i class="fas fa-upload"></i>
+            Upload Plant Image
+        </h2>
+        <div class="upload-section">
+            <input type="file" id="file-input" accept="image/*" hidden>
+            <div id="drop-area">
+                <i class="fas fa-seedling"></i>
+                <p class="upload-text">Drop your plant image here</p>
+                <p class="upload-subtext">or click to browse files • JPG, PNG, WEBP</p>
+            </div>
+            <div id="image-preview-container">
+                <img id="image-preview" src="#" alt="Plant Image Preview">
+                <div class="image-overlay">
+                    <div class="image-status">
+                        <i class="fas fa-check-circle"></i>
+                        Image Uploaded Successfully
+                    </div>
+                    <div class="image-info">Analysis in progress. Click the × button to upload a different image.</div>
+                </div>
+                <button id="clear-image-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="panel">
+        <h2 class="panel-title">
+            <i class="fas fa-brain"></i>
+            AI Analysis Results
+        </h2>
+        <div class="results-section">
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <h3>Ready for Analysis</h3>
+                <p>Upload a plant image to get instant AI-powered disease detection and treatment recommendations.</p>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading-indicator">
+                <div class="spinner"></div>
+                <p class="loading-text">Analyzing your plant image...</p>
+                <p class="loading-subtext">Our AI is examining the image for diseases and health indicators</p>
+            </div>
+
+            <!-- Results Content -->
+            <div id="results-content">
+                <div class="result-card">
+                    <div class="result-label">
+                        <i class="fas fa-tag"></i>
+                        Disease Detection
+                    </div>
+                    <div class="result-value" id="model-prediction"></div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-label">
+                        <i class="fas fa-lightbulb"></i>
+                        Treatment Recommendations
+                    </div>
+                    <div class="result-value" id="ai-insights"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="js/diagnostics.js"></script>
+</body>
+</html>
