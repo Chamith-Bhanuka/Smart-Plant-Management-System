@@ -27,35 +27,6 @@ public class ExpertController {
     private final CaseAssignmentRepository assignRepo;
     private final DiagnosisCaseRepository caseRepo;
 
-//    @GetMapping
-//    public List<ExpertSummary> listExperts() {
-//        return profileRepo.findAll().stream().map(p ->
-//                new ExpertSummary(
-//                        p.getUser().getId(),
-//                        p.getUser().getEmail(),
-//                        p.getAbout(),
-//                        p.getSpecializations(),
-//                        p.getEducation(),
-//                        p.getExperience()
-//                )
-//        ).toList();
-//    }
-
-//    @PostMapping("/{expertId}/assign-case")
-//    public void assignCase(
-//            @PathVariable Long expertId,
-//            @RequestBody Map<String,String> body
-//    ) {
-//        String code = body.get("caseCode");
-//        DiagnosisCase dc = caseRepo.findByCaseCode(code)
-//                .orElseThrow();
-//        User expert = userRepo.findById(expertId).orElseThrow();
-//        CaseAssignment ca = new CaseAssignment();
-//        ca.setExpert(expert);
-//        ca.setDiagnosisCase(dc);
-//        assignRepo.save(ca);
-//    }
-
     @PostMapping("/{expertId}/assign-case")
     public ResponseEntity<?> assignCase(
             @PathVariable Long expertId,
