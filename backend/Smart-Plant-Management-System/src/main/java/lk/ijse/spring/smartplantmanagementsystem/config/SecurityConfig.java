@@ -42,7 +42,7 @@ public class SecurityConfig {
                         // 1) Allow anyone to fetch stored diagnosis images
                         .requestMatchers(HttpMethod.GET, "/uploads/diagnoses/**").permitAll()
                         // Others
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**", "/api/experts/**").permitAll()
                         // open your auth & AI endpoints
                         .requestMatchers("/auth/**", "/ai/**", "/plants/**").permitAll()
                         // everything else needs a valid JWT

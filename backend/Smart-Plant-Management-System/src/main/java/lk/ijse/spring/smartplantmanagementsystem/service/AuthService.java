@@ -3,9 +3,11 @@ package lk.ijse.spring.smartplantmanagementsystem.service;
 import lk.ijse.spring.smartplantmanagementsystem.dto.AuthDTO;
 import lk.ijse.spring.smartplantmanagementsystem.dto.AuthResponseDTO;
 import lk.ijse.spring.smartplantmanagementsystem.dto.RegisterDTO;
+import lk.ijse.spring.smartplantmanagementsystem.entity.ExpertProfile;
 import lk.ijse.spring.smartplantmanagementsystem.entity.RefreshToken;
 import lk.ijse.spring.smartplantmanagementsystem.entity.Role;
 import lk.ijse.spring.smartplantmanagementsystem.entity.User;
+import lk.ijse.spring.smartplantmanagementsystem.repository.ExpertProfileRepository;
 import lk.ijse.spring.smartplantmanagementsystem.repository.RefreshTokenRepository;
 import lk.ijse.spring.smartplantmanagementsystem.repository.UserRepository;
 import lk.ijse.spring.smartplantmanagementsystem.util.JWTUtil;
@@ -28,6 +30,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JWTUtil jwtUtil;
     private final TokenDanyListService denyListService;
+    private final ExpertProfileRepository expertProfileRepository;
 
     public String register(RegisterDTO registerDTO) {
 
@@ -42,6 +45,18 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        if (user.getRole() == Role.EXPERT) {
+            System.out.println("Expert Try...🔃");
+            ExpertProfile expertProfile = new ExpertProfile();
+            expertProfile.setUser(user);
+            expertProfile.setAbout(registerDTO.getAbout());
+            expertProfile.setSpecializations(registerDTO.getSpecializations());
+            expertProfile.setExperience(registerDTO.getExperience());
+            expertProfile.setEducation(registerDTO.getEducation());
+            expertProfileRepository.save(expertProfile);
+        }
+
         return "User Registered Successfully";
     }
 

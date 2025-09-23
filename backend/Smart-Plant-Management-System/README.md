@@ -63,9 +63,7 @@ The system also uses **Ollama AI** to generate natural language insights and pro
    git clone https://github.com/your-username/smart-plant-management.git
    cd smart-plant-management/backend
 
-### 2. Backend (Spring Boot)
-
-1. Clone the repository:
+2. Configure src/main/resources/application.properties:
    ```bash
    git clone https://github.com/your-username/smart-plant-management.git
    cd smart-plant-management/backend
